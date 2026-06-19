@@ -117,10 +117,10 @@ Style-AI uses Machine Learning techniques to generate personalized recommendatio
 ## Project Demo
 
 <p align="center">
-  <img src="frotend/assets/images/style_user.jpg" width="30%">
-  <img src="frotend/assets/images/user_data.jpg" width="30%">
-  <img src="frotend/assets/images/user_output1.jpg" width="30%">
-  <img src="frotend/assets/images/user_output2.png" width="30%">
+  <img src="frontend/assets/images/style_user.jpg" width="30%">
+  <img src="frontend/assets/images/user_data.jpg" width="30%">
+  <img src="frontend/assets/images/user_output1.jpg" width="30%">
+  <img src="frontend/assets/images/user_output2.png" width="30%">
 </p>
 
 
