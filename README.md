@@ -116,13 +116,19 @@ Style-AI uses Machine Learning techniques to generate personalized recommendatio
 
 ## Project Demo
 
-<p align="center">
-  <img src="frontend/assets/images/style_user.jpg" width="30%">
-  <img src="frontend/assets/images/user_data.jpg" width="30%">
-  <img src="frontend/assets/images/user_output1.jpg" width="30%">
-  <img src="frontend/assets/images/user_output2.png" width="30%">
-</p>
+<h2>📸 Screenshots</h2>
 
+<h3>1. User Profile Input</h3>
+<img src="frontend/assets/images/style_user.jpg" width="800">
+
+<h3>2. User Data Analysis</h3>
+<img src="frontend/assets/images/user_data.jpg" width="800">
+
+<h3>3. Fashion Recommendations Output</h3>
+<img src="frontend/assets/images/user_output1.jpg" width="800">
+
+<h3>4. Styling Suggestions & Results</h3>
+<img src="frontend/assets/images/user_output2.png" width="800">
 
 > Screenshots will be updated as new modules are completed.
 
