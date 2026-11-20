@@ -81,6 +81,7 @@ async function getRecommendations() {
     preferred_style: document.getElementById("preferred_style").value,
     hair_length:     document.getElementById("hair_length").value,
     hair_texture:    document.getElementById("hair_texture").value,
+    save_to_mongodb: document.getElementById("saveToMongo").checked,
   };
 
   // Validate
@@ -159,12 +160,19 @@ async function switchOccasion(newOccasion) {
   await fetchAndRender(updated, null);
 }
 
-// ── Style match score ───────────────────────────────────────────────────────
 // ── Render all results ─────────────────────────────────────────────────────
 function renderResults(data) {
   const recommendations = data.recommendations;
   const guide = data.styling_guide;
   const stats = data.user_stats;
+  const saveStatus = document.getElementById("saveStatus");
+  if (data.mongodb && data.mongodb.saved) {
+    saveStatus.textContent = "✅ Profile and recommendations saved to MongoDB.";
+  } else if (data.mongodb && data.mongodb.error) {
+    saveStatus.textContent = `Recommendations were generated, but MongoDB could not save them: ${data.mongodb.error}`;
+  } else {
+    saveStatus.textContent = "";
+  }
 
   document.getElementById("divider").style.display = "block";
 
@@ -188,7 +196,7 @@ function renderResults(data) {
   document.getElementById("styleScoreCard").innerHTML = `
     <span class="score-label">Recommendation method</span>
     <span class="score-number">${method}</span>
-    <span class="score-max">not a trained ML score</span>
+    <span class="score-max">synthetic, not validated</span>
   `;
 
   // ── Occasion switch buttons ─────────────────────────────────────────────
@@ -429,6 +437,8 @@ function resetForm() {
   document.getElementById("face_shape").value = "";
   document.getElementById("hair_texture").value = "Straight";
   document.getElementById("uploadStatus").textContent = "";
+  document.getElementById("saveToMongo").checked = false;
+  document.getElementById("saveStatus").textContent = "";
   lastPayload = null;
   window.scrollTo({ top: 0, behavior: "smooth" });
 }

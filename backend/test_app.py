@@ -4,10 +4,12 @@ from PIL import Image
 import pytest
 import cv2
 import numpy as np
+from pymongo.errors import PyMongoError
 
 import app as app_module
 from app import app
 from image_analysis import classify_skin_tone, detect_faces, preprocess_image
+import storage as storage_module
 
 
 def make_image(extension="PNG", size=(200, 200), color=(180, 140, 120)):
@@ -31,6 +33,7 @@ def test_health(client):
     body = response.get_json()
     assert body["status"] == "ok"
     assert body["recommendation_model"]["available"] is True
+    assert "mongodb" in body
 
 
 def test_home_serves_frontend(client):
@@ -157,6 +160,65 @@ def test_recommendation_workflow_returns_renderable_data(client):
     assert guide["jewelry"]["ring"]
     assert guide["accessories"]
     assert body["user_stats"]["bmi"] > 0
+    assert body["mongodb"] == {"requested": False, "saved": False}
+
+
+def test_saves_profile_only_after_explicit_opt_in(client, monkeypatch):
+    class FakeCollection:
+        document = None
+
+        def insert_one(self, document):
+            self.document = document
+            return type("InsertResult", (), {"inserted_id": "test-record"})()
+
+    collection = FakeCollection()
+    monkeypatch.setattr(storage_module, "_collection", lambda: collection)
+    profile = valid_profile()
+    profile["save_to_mongodb"] = True
+
+    response = client.post("/api/recommend", json=profile)
+
+    assert response.status_code == 200
+    assert response.get_json()["mongodb"] == {
+        "requested": True,
+        "saved": True,
+        "record_id": "test-record",
+    }
+    assert collection.document["profile"]["face_shape"] == "Oval"
+    assert "photo" not in collection.document
+
+
+def test_reports_when_mongodb_is_not_configured(client, monkeypatch):
+    monkeypatch.delenv("MONGO_URI", raising=False)
+    storage_module._client_for_uri.cache_clear()
+    profile = valid_profile()
+    profile["save_to_mongodb"] = True
+
+    response = client.post("/api/recommend", json=profile)
+
+    assert response.status_code == 200
+    database_result = response.get_json()["mongodb"]
+    assert database_result["saved"] is False
+    assert "MONGO_URI" in database_result["error"]
+
+
+def test_reports_mongodb_save_errors_without_losing_recommendations(client, monkeypatch):
+    class FailedCollection:
+        def insert_one(self, document):
+            assert isinstance(document, dict)
+            raise PyMongoError("test connection failure")
+
+    monkeypatch.setattr(storage_module, "_collection", lambda: FailedCollection())
+    profile = valid_profile()
+    profile["save_to_mongodb"] = True
+
+    response = client.post("/api/recommend", json=profile)
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["recommendations"]["outfit"]["recommendation"]
+    assert body["mongodb"]["saved"] is False
+    assert "Check the URI" in body["mongodb"]["error"]
 
 
 def test_recommendation_changes_when_occasion_changes(client):

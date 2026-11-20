@@ -92,3 +92,16 @@
 - **Commit hash:** `856cb187189676bf948a4d27ea49bd9df9860a70`
 - **GitHub push status:** Successfully pushed and verified on `origin/main`
 - **Remaining tasks:** MongoDB Atlas opt-in persistence, real labeled data for accuracy evaluation, MediaPipe/face-shape extraction, virtual try-on, and fashion trend prediction.
+
+### 8. MongoDB Atlas opt-in persistence
+
+- **Feature:** Database persistence
+- **Development step:** Add env-configured Atlas storage for user-approved profile and recommendation history
+- **Files:** `.env.example`, `README.md`, `backend/app.py`, `backend/requirements.txt`, `backend/storage.py`, `backend/test_app.py`, `frontend/app.js`, `frontend/index.html`, `frontend/style.css`, `test_db.py`
+- **Implementation summary:** Added a local `.env` configuration path for Atlas, a database health check, and consent-based persistence to `recommendation_history`. Saving is unchecked by default; generated recommendations still display if MongoDB is unconfigured or unavailable. The uploaded photo is not included in MongoDB documents.
+- **Tests:** `python -m pytest -q backend/test_app.py`; `python -m compileall -q backend`; `python -m pip check`; `node --check frontend/app.js`; workspace Pylance diagnostics; `python test_db.py` with no URI.
+- **Test results:** 31 tests passed; compilation, dependencies, frontend syntax, and Pylance checks passed. Live health, model recommendation, palette/accessory, and opt-in error workflows passed on port 8001. The database check reports missing `MONGO_URI` clearly. Live Atlas connectivity remains unverified because no Atlas URI is configured.
+- **Git commit:** Pending
+- **Commit hash:** Pending
+- **GitHub push status:** Pending
+- **Remaining tasks:** Configure and verify the user's Atlas URI/network access; replace generated ML examples with reviewed or real labeled data before claiming prediction accuracy; implement MediaPipe face-shape analysis.

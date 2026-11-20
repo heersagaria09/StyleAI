@@ -214,6 +214,13 @@
       </div>
       <p id="uploadStatus" class="upload-status"></p>
 
+      <label class="save-profile-option">
+        <input type="checkbox" id="saveToMongo" />
+        Save my profile and recommendations to MongoDB
+      </label>
+      <p class="hint">Optional. Your photo is never saved to MongoDB. Configure MONGO_URI locally to enable saving.</p>
+      <p id="saveStatus" class="upload-status" role="status" aria-live="polite"></p>
+
       <button class="btn-primary" id="getStyleBtn" onclick="getRecommendations()">
         <span class="btn-icon">✦</span>
         Get my style recommendations

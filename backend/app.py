@@ -9,6 +9,7 @@ from PIL import Image, UnidentifiedImageError
 
 from image_analysis import classify_skin_tone, detect_faces, preprocess_image
 from recommendation_model import get_recommendations, model_status
+from storage import mongodb_status, save_recommendation
 from style_catalog import get_body_type_guide, get_color_avoidance, get_hairstyle_guide
 
 
@@ -48,7 +49,11 @@ def home():
 
 @app.get("/api/health")
 def health():
-    return jsonify({"status": "ok", "recommendation_model": model_status()})
+    return jsonify({
+        "status": "ok",
+        "recommendation_model": model_status(),
+        "mongodb": mongodb_status(),
+    })
 
 
 @app.post("/api/upload")
@@ -131,6 +136,10 @@ def uploaded_photo(filename):
 def _validate_profile(payload):
     if not isinstance(payload, dict):
         return None, "A JSON profile object is required."
+
+    save_to_mongodb = payload.get("save_to_mongodb", False)
+    if not isinstance(save_to_mongodb, bool):
+        return None, "save_to_mongodb must be a boolean."
 
     numeric_fields = {
         "height_inches": (48, 83),
@@ -225,7 +234,12 @@ def recommend():
     profile, error = _validate_profile(request.get_json(silent=True))
     if error:
         return jsonify({"error": error}), 400
-    return jsonify(_build_recommendations(profile))
+    result = _build_recommendations(profile)
+    if profile.get("save_to_mongodb", False):
+        result["mongodb"] = save_recommendation(profile, result)
+    else:
+        result["mongodb"] = {"requested": False, "saved": False}
+    return jsonify(result)
 
 
 if __name__ == "__main__":

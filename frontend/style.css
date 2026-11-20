@@ -211,6 +211,8 @@ body {
 
 .upload-sub { font-size: 12px; color: var(--text-light); }
 .upload-status { font-size: 12px; color: var(--rose-light); margin-bottom: 16px; min-height: 16px; }
+.save-profile-option { display:flex; align-items:center; gap:8px; margin:4px 0 6px; color:var(--text-dark); font-size:13px; }
+.save-profile-option input { accent-color:var(--rose-dark); }
 
 /* ── Buttons ──────────────────────────────────────────────────────────────── */
 .btn-primary {
