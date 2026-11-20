@@ -216,13 +216,42 @@ function renderResults(data) {
 
   // ── Style score ──────────────────────────────────────────────────────────
   const method = data.recommendation_method === "experimental_synthetic_neural_network"
-    ? "Neural-net demo"
+    ? "Style AI prototype"
     : "Unknown";
-  document.getElementById("styleScoreCard").innerHTML = `
+  const styleScoreCard = document.getElementById("styleScoreCard");
+  styleScoreCard.innerHTML = `
     <span class="score-label">Recommendation method</span>
     <span class="score-number">${method}</span>
-    <span class="score-max">generated labels; unvalidated</span>
+    <span class="score-max">Generated examples; real-world accuracy untested</span>
+    <div class="match-feedback" role="group" aria-labelledby="matchFeedbackLabel">
+      <span class="match-feedback-label" id="matchFeedbackLabel">How well did this match your style?</span>
+      <div class="match-rating-buttons" id="matchRatingButtons"></div>
+      <span class="match-feedback-status" id="matchFeedbackStatus" aria-live="polite">Not rated</span>
+      <small class="match-feedback-note">Your rating is feedback, not model accuracy.</small>
+    </div>
   `;
+  const ratingLabels = ["Not at all", "A little", "Somewhat", "Mostly", "Very well"];
+  const ratingButtons = styleScoreCard.querySelector("#matchRatingButtons");
+  ratingLabels.forEach((label, index) => {
+    const rating = index + 1;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "match-rating-button";
+    button.textContent = String(rating);
+    button.setAttribute("aria-label", `${rating} out of 5: ${label}`);
+    button.setAttribute("aria-pressed", "false");
+    button.addEventListener("click", () => {
+      ratingButtons.querySelectorAll(".match-rating-button").forEach((item) => {
+        item.classList.remove("selected");
+        item.setAttribute("aria-pressed", "false");
+      });
+      button.classList.add("selected");
+      button.setAttribute("aria-pressed", "true");
+      styleScoreCard.querySelector("#matchFeedbackStatus").textContent =
+        `Your match rating: ${rating}/5 — ${label}.`;
+    });
+    ratingButtons.appendChild(button);
+  });
 
   // ── Occasion switch buttons ─────────────────────────────────────────────
   renderOccasionButtons(document.getElementById("occasion").value);
@@ -370,7 +399,7 @@ function buildPrintReport(data) {
       </div>
       <div class="print-item">
         <h4>Recommendation method</h4>
-        <p>Experimental neural network trained on generated labels; not validated</p>
+        <p>Experimental style model trained on generated examples; real-world accuracy is untested.</p>
       </div>
     </div>
 

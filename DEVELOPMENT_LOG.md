@@ -147,3 +147,11 @@
 - **Files:** `README.md`, `DEVELOPMENT_LOG.md`, `frontend/app.js`, `frontend/index.html`, `frontend/style.css`
 - **Implementation summary:** Added explicit camera start/capture/close controls using `getUserMedia`; capture requests permission only after a click, creates a bounded JPEG, and reuses the upload flow. Camera tracks stop after capture, on close, reset, or page exit. The UI clarifies that face analysis does not identify a person and reports non-JSON API failures clearly. README commands explicitly run Flask and tests with the project venv.
 - **Tests:** `node --check frontend/app.js`; `backend\.venv\Scripts\python.exe -m pytest -q backend`; `git diff --check`; live photo upload returned HTTP 200 on port 8001 using the project venv. The existing port 8000 process returned an HTML 500 for uploads; its command line used the global Python interpreter, which cannot import OpenCV. Restart it with the project venv.
+
+### 14. Add recommendation match feedback
+
+- **Feature:** User-rated recommendation match
+- **Development step:** Let users rate how well the generated style result matches them
+- **Files:** `README.md`, `DEVELOPMENT_LOG.md`, `frontend/app.js`, `frontend/style.css`
+- **Implementation summary:** Added an accessible 1–5 rating control to the recommendation card. The displayed rating is explicitly self-reported, is not represented as model accuracy, and is not persisted or used for training.
+- **Tests:** `node --check frontend/app.js`; `git diff --check`.

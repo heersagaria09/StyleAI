@@ -440,6 +440,24 @@ body {
   margin-top: 2px;
 }
 
+.match-feedback { width: 100%; margin-top: 10px; text-align: center; }
+.match-feedback-label { display: block; color: #FBEAF0; font-size: 11px; margin-bottom: 6px; }
+.match-rating-buttons { display: flex; justify-content: center; gap: 5px; }
+.match-rating-button {
+  width: 26px;
+  height: 26px;
+  border: 1px solid #ED93B1;
+  border-radius: 50%;
+  background: transparent;
+  color: #FBEAF0;
+  cursor: pointer;
+  font-size: 11px;
+}
+.match-rating-button:hover,
+.match-rating-button.selected { background: var(--gold); border-color: var(--gold); color: var(--rose-dark); }
+.match-feedback-status { display: block; min-height: 14px; margin-top: 5px; color: #FBEAF0; font-size: 11px; }
+.match-feedback-note { display: block; margin-top: 3px; color: #ED93B1; font-size: 9px; }
+
 /* ── Occasion quick switch ────────────────────────────────────────────────── */
 .occasion-switch {
   background: white;
