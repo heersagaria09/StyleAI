@@ -27,3 +27,16 @@
 - **Commit hash:** `cfb89581154c22a63e4aa1bd1e7fd7ae5689d2f0`
 - **GitHub push status:** Successfully pushed and verified on `origin/main`
 - **Remaining tasks:** Face detection, skin tone detection, face shape detection, frontend result integration, recommendation APIs, virtual try-on, deep learning recommendations, trend prediction, and README update.
+
+### 3. OpenCV face detection
+
+- **Feature:** OpenCV-based image analysis
+- **Development step:** Detect one or more frontal faces and return bounded regions
+- **Files:** `backend/image_analysis.py`, `backend/test_app.py`
+- **Implementation summary:** Added OpenCV Haar cascade loading, frontal-face detection, minimum-size filtering, and face boxes sorted by largest area.
+- **Tests:** `python -m pytest -q backend/test_app.py`
+- **Test results:** 9 upload, preprocessing, and face-detection tests passed.
+- **Git commit:** `feat: add OpenCV face detection`
+- **Commit hash:** `cf662a17339ac59685719e40320a90d4ba348cfe`
+- **GitHub push status:** Successfully pushed and verified on `origin/main`
+- **Remaining tasks:** Skin tone detection, face shape detection, frontend result integration, recommendation APIs, virtual try-on, deep learning recommendations, trend prediction, and README update.
