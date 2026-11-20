@@ -7,4 +7,5 @@ __pycache__/
 .vscode/
 backend/uploads/
 backend/models/*.pkl
+backend/.venv/
 *.DS_Stores
