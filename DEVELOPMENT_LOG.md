@@ -66,3 +66,16 @@
 - **Commit hash:** `5a184c6cd4d25d2ad9032e6d3fee3d421a6b4bff`
 - **GitHub push status:** Successfully pushed and verified on `origin/main`
 - **Remaining tasks:** Face-shape detection, backend/frontend CV integration, recommendation APIs, virtual try-on, deep learning recommendations, trend prediction, README update, and end-to-end verification.
+
+### 6. Flask application and frontend workflow repair
+
+- **Feature:** Flask backend and recommendation workflow
+- **Development step:** Serve the frontend from Flask, implement the profile recommendation API, and connect image upload to OpenCV
+- **Files:** `backend/app.py`, `backend/test_app.py`, `frontend/app.js`, `frontend/index.html`, `README.md`
+- **Implementation summary:** Added the missing `/api/recommend` endpoint with input validation and explicit rule-based output, served frontend files from Flask at `/`, integrated upload with image preprocessing/face detection/skin-tone analysis, improved upload and network error messages, fixed the undefined frontend error variable, and made the frontend use the same-origin API. Disabled debug mode by default and documented the actual backend scope and run command.
+- **Tests:** `python -m pytest -q backend/test_app.py`; `python -m compileall -q backend`; `python -m pip check`; `node --check frontend/app.js`; live HTTP checks for `/`, `/api/health`, `/api/recommend`, and `/api/upload`.
+- **Test results:** 27 tests passed; Python compilation and dependency checks passed; JavaScript syntax check passed. Port 8000 was occupied by another process, so live app checks were moved to configurable port 8001.
+- **Git commit:** Pending
+- **Commit hash:** Pending
+- **GitHub push status:** Pending
+- **Remaining tasks:** Face-shape landmark detection, advanced recommendations, virtual try-on, deep-learning recommendations, trend prediction, and full browser-based UX validation.

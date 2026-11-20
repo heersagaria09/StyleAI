@@ -1,4 +1,4 @@
-const API = "http://localhost:8000/api";
+const API = "/api";
 
 const COLOR_HEX = {
   "Pastel Pink":      "#FFB5C8", "Baby Blue":        "#89CFF0",
@@ -117,19 +117,19 @@ async function fetchAndRender(payload, btn) {
       body:    JSON.stringify(payload),
     });
 
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || "Server error");
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error("The server returned an invalid response.");
     }
-
-    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Server error");
     lastPayload = payload;
     renderResults(data);
 
-  // NEW — matches your actual port
-} catch {
-  alert("Error: " + err.message + "\n\nMake sure Flask is running on port 8000.");
-} finally {
+  } catch (err) {
+    alert(`Error: ${err.message}\n\nOpen StyleAI at the Flask URL shown in the server terminal.`);
+  } finally {
     if (btn) {
       btn.disabled  = false;
       btn.innerHTML = '<span class="btn-icon">✦</span> Get my style recommendations';
@@ -160,19 +160,9 @@ async function switchOccasion(newOccasion) {
 }
 
 // ── Style match score ───────────────────────────────────────────────────────
-function calcStyleScore(ml) {
-  const scores = [
-    ml.outfit.confidence, ml.color_palette.confidence,
-    ml.hairstyle.confidence, ml.earrings.confidence, ml.necklace.confidence
-  ].map(v => parseFloat(v));
-
-  const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-  return Math.round(avg);
-}
-
 // ── Render all results ─────────────────────────────────────────────────────
 function renderResults(data) {
-  const ml    = data.ml_recommendations;
+  const recommendations = data.recommendations;
   const guide = data.styling_guide;
   const stats = data.user_stats;
 
@@ -194,19 +184,19 @@ function renderResults(data) {
   `;
 
   // ── Style score ──────────────────────────────────────────────────────────
-  const score = calcStyleScore(ml);
+  const method = data.recommendation_method === "rule-based" ? "Rules" : "Unknown";
   document.getElementById("styleScoreCard").innerHTML = `
-    <span class="score-label">Style Match</span>
-    <span class="score-number">${score}</span>
-    <span class="score-max">out of 100</span>
+    <span class="score-label">Recommendation method</span>
+    <span class="score-number">${method}</span>
+    <span class="score-max">not a trained ML score</span>
   `;
 
   // ── Occasion switch buttons ─────────────────────────────────────────────
   renderOccasionButtons(document.getElementById("occasion").value);
 
   // ── Outfit ───────────────────────────────────────────────────────────────
-  document.getElementById("outfitText").textContent = ml.outfit.recommendation;
-  setConfBadge("outfitConf", ml.outfit.confidence);
+  document.getElementById("outfitText").textContent = recommendations.outfit.recommendation;
+  setConfBadge("outfitConf", recommendations.outfit.basis);
   document.getElementById("outfitTip").textContent  = guide.outfit_tip || "";
 
   const wearTags = document.getElementById("wearTags");
@@ -224,8 +214,8 @@ function renderResults(data) {
   document.getElementById("colorTip").textContent = guide.color_tip || "";
 
   // ── Hairstyle ─────────────────────────────────────────────────────────────
-  document.getElementById("hairstyleText").textContent = ml.hairstyle.recommendation;
-  setConfBadge("hairstyleConf", ml.hairstyle.confidence);
+  document.getElementById("hairstyleText").textContent = recommendations.hairstyle.recommendation;
+  setConfBadge("hairstyleConf", recommendations.hairstyle.basis);
 
   const bestDiv = document.getElementById("hairstyleBest");
   bestDiv.innerHTML = "";
@@ -246,12 +236,12 @@ function renderResults(data) {
   document.getElementById("jewelryList").innerHTML = `
     <div class="jewelry-item">
       <div class="ji-label">💫 Earrings</div>
-      <div class="ji-value">${ml.earrings.recommendation}</div>
+      <div class="ji-value">${recommendations.earrings.recommendation}</div>
       <div class="ji-tip">${j.earrings}</div>
     </div>
     <div class="jewelry-item">
       <div class="ji-label">📿 Necklace</div>
-      <div class="ji-value">${ml.necklace.recommendation}</div>
+      <div class="ji-value">${recommendations.necklace.recommendation}</div>
       <div class="ji-tip">${j.necklace}</div>
     </div>
     <div class="jewelry-item">
@@ -329,7 +319,7 @@ function renderSwatches(containerId, colors, isAvoid) {
 
 // ── Download style report (print to PDF) ────────────────────────────────────
 function buildPrintReport(data) {
-  const ml    = data.ml_recommendations;
+  const recommendations = data.recommendations;
   const guide = data.styling_guide;
   const stats = data.user_stats;
 
@@ -346,16 +336,16 @@ function buildPrintReport(data) {
         <small>${stats.height_inches}" · ${stats.weight_kg} kg</small>
       </div>
       <div class="print-item">
-        <h4>Style Match Score</h4>
-        <p>${calcStyleScore(ml)} / 100</p>
+        <h4>Recommendation method</h4>
+        <p>Rule-based styling suggestions</p>
       </div>
     </div>
 
     <div class="print-row">
       <div class="print-item">
         <h4>👗 Outfit</h4>
-        <p>${ml.outfit.recommendation}</p>
-        <small>${ml.outfit.confidence} confidence</small>
+        <p>${recommendations.outfit.recommendation}</p>
+        <small>${recommendations.outfit.basis} recommendation</small>
       </div>
       <div class="print-item">
         <h4>🎨 Color Palette</h4>
@@ -366,12 +356,12 @@ function buildPrintReport(data) {
     <div class="print-row">
       <div class="print-item">
         <h4>💇 Hairstyle</h4>
-        <p>${ml.hairstyle.recommendation}</p>
-        <small>${ml.hairstyle.confidence} confidence</small>
+        <p>${recommendations.hairstyle.recommendation}</p>
+        <small>${recommendations.hairstyle.basis} recommendation</small>
       </div>
       <div class="print-item">
         <h4>💍 Jewelry</h4>
-        <p>${ml.earrings.recommendation} · ${ml.necklace.recommendation}</p>
+        <p>${recommendations.earrings.recommendation} · ${recommendations.necklace.recommendation}</p>
       </div>
     </div>
 
@@ -404,6 +394,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const res  = await fetch(`${API}/upload`, { method: "POST", body: form });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Image upload failed.");
 
       if (data.detected) {
         const d = data.detected;
@@ -413,13 +404,14 @@ document.addEventListener("DOMContentLoaded", () => {
         if (d.skin_tone && d.skin_tone !== "Unknown") {
           document.getElementById("skin_tone").value = d.skin_tone;
         }
-        uploadStatus.textContent =
-          `✅ Detected — Face: ${d.face_shape} · Skin: ${d.skin_tone}`;
+        uploadStatus.textContent = d.face_shape !== "Unknown" || d.skin_tone !== "Unknown"
+          ? `✅ Detected — Face: ${d.face_shape} · Skin: ${d.skin_tone}. ${data.analysis_note || ""}`
+          : `✅ Photo uploaded. ${data.analysis_note || "Continue with manual category selection."}`;
       } else {
         uploadStatus.textContent = "✅ Photo uploaded. Categories are available for manual selection.";
       }
     } catch (err) {
-      uploadStatus.textContent = "Photo upload unavailable. Continue with manual category selection.";
+      uploadStatus.textContent = `${err.message} Continue with manual category selection.`;
     }
   });
 });

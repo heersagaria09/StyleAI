@@ -1,10 +1,10 @@
 # Style-AI ✨
 
-### Machine Learning-Based Personalized Fashion Recommendation System
+### Profile-Based Personalized Fashion Styling System
 
-Style-AI is a Machine Learning-powered fashion recommendation platform that provides personalized outfit, color palette, hairstyle, jewelry, and accessory suggestions based on user attributes such as height, weight, body type, skin tone, face shape, occasion, and fashion preferences.
+Style-AI provides outfit, color palette, hairstyle, jewelry, and accessory suggestions based on profile selections such as body type, skin tone, face shape, occasion, and fashion preferences.
 
-The platform leverages Machine Learning algorithms and recommendation techniques to generate customized styling suggestions, helping users make confident fashion decisions based on their unique characteristics.
+The current Flask recommendation API uses deterministic, profile-based rules. It does not load or claim predictions from a trained machine-learning model.
 
 ---
 
@@ -39,43 +39,16 @@ The platform leverages Machine Learning algorithms and recommendation techniques
 
 ---
 
-## 🧠 Machine Learning Implementation
+## 🧩 Current Recommendation Logic
 
-Style-AI uses Machine Learning techniques to generate personalized recommendations based on user characteristics.
+Recommendations are selected from curated styling rules using the following profile inputs:
 
-### Input Features
-
-* Height
-* Weight
 * Body Type
 * Skin Tone
 * Face Shape
 * Occasion
 * Preferred Fashion Style
-
-### Machine Learning Algorithms
-
-* Random Forest Classifier
-* Decision Tree Classifier
-* K-Nearest Neighbors (KNN)
-
-### Machine Learning Pipeline
-
-1. Data Collection
-2. Data Cleaning
-3. Data Preprocessing
-4. Feature Engineering
-5. Label Encoding
-6. Model Training
-7. Model Evaluation
-8. Recommendation Generation
-
-### Evaluation Metrics
-
-* Accuracy
-* Precision
-* Recall
-* F1-Score
+* Hair length and texture
 
 ---
 
@@ -93,20 +66,56 @@ Style-AI uses Machine Learning techniques to generate personalized recommendatio
 
 ### Database
 
-* MongoDB
+* Not currently connected to the Flask recommendation workflow
 
-### Machine Learning
+### Image Analysis
 
 * Python
-* Scikit-Learn
-* Pandas
-* NumPy
+* OpenCV
+* Pillow
 
 ### Development Tools
 
 * VS Code
 * Git
 * GitHub
+
+## ▶️ Run the application locally
+
+The Flask server serves both the frontend and API. From the repository root in PowerShell:
+
+```powershell
+py -3.11 -m venv backend\.venv
+.\backend\.venv\Scripts\Activate.ps1
+pip install -r backend\requirements.txt
+python backend\app.py
+```
+
+Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/). Do not open `frontend/index.html` directly or use a separate static server; the frontend calls the Flask API at the same origin.
+
+If port 8000 is already in use, set a free port before starting Flask:
+
+```powershell
+$env:PORT = "8001"
+python backend\app.py
+```
+
+Then open [http://127.0.0.1:8001/](http://127.0.0.1:8001/).
+
+Run backend tests with:
+
+```powershell
+python -m pytest -q backend\test_app.py
+```
+
+### Current backend scope
+
+- `GET /api/health` checks that the Flask server is responding.
+- `POST /api/recommend` validates the profile and returns deterministic, rule-based styling suggestions. These are not trained machine-learning predictions.
+- `POST /api/upload` validates and stores JPG, PNG, and WEBP images, then uses OpenCV for face detection and skin-tone estimation when one face is found. Face shape remains a manual selection.
+- `GET /api/uploads/<filename>` serves a previously uploaded image.
+
+Images are limited to 10 MB and stored under `backend/uploads/`. The current styling suggestions do not require MongoDB or model files.
 
 ---
 
@@ -135,52 +144,24 @@ Style-AI uses Machine Learning techniques to generate personalized recommendatio
 ---
 
 ## 🚧 Development Status
-* In development.
+
+Style-AI is in development. Its current recommendations are deterministic styling rules, not trained machine-learning output.
+
 ### Completed Modules
 
-✅ User Profile Management
+✅ Profile form with manual body, skin-tone, and face-shape selection
 
-✅ Height & Weight Analysis
+✅ Flask server for the frontend and API
 
-✅ Body Type Selection
+✅ Profile validation and rule-based styling recommendation API
 
-✅ Skin Tone Selection
-
-✅ Face Shape Selection
-
-✅ Occasion-Based Styling Preferences
-
-✅ Fashion Style Preference Module
-
-✅ Dataset Collection & Preparation
-
-✅ Data Preprocessing Pipeline
-
-✅ Feature Engineering
-
-✅ Machine Learning Model Development
-
-✅ Outfit Recommendation System
-
-✅ Color Recommendation System
-
-✅ Hairstyle Recommendation System
-
-✅ Jewelry & Accessories Recommendation System
-
-✅ Recommendation Engine
-
-✅ Flask Backend Integration
-
-✅ MongoDB Database Integration
+✅ Image upload validation, OpenCV preprocessing, face detection, and basic skin-tone estimation
 
 ### In Progress
 
-🔄 OpenCV-Based Image Analysis Module
+🔄 Improving skin-tone reliability; results may be unknown and require manual selection
 
 ### Upcoming Features
-
-📌 Automatic Skin Tone Detection
 
 📌 Face Shape Detection from Images
 
@@ -196,7 +177,7 @@ Style-AI uses Machine Learning techniques to generate personalized recommendatio
 
 ## 🎯 Project Objectives
 
-* Provide personalized fashion recommendations using Machine Learning.
+* Provide personalized fashion recommendations from user-selected profile information.
 * Improve styling decisions through data-driven suggestions.
 * Recommend outfits based on body type and occasion.
 * Suggest colors suitable for different skin tones.
