@@ -88,7 +88,7 @@
 - **Implementation summary:** Added a reproducible 18,000-row generated example dataset and six decision-tree classifiers for outfits, color palettes, hairstyles, earrings, necklaces, and accessories. The API now uses model predictions for these recommendations and identifies them as a synthetic-data prototype; it makes no real-world accuracy claim.
 - **Tests:** `python -m pytest -q backend/test_app.py`; `python -m compileall -q backend`; `python -m pip check`; `node --check frontend/app.js`; workspace Pylance diagnostics.
 - **Test results:** 28 tests passed; compilation, dependency, JavaScript syntax, and Pylance checks passed.
-- **Git commit:** Pending
-- **Commit hash:** Pending
-- **GitHub push status:** Pending
+- **Git commit:** `feat: add prototype ML style recommender`
+- **Commit hash:** `856cb187189676bf948a4d27ea49bd9df9860a70`
+- **GitHub push status:** Successfully pushed and verified on `origin/main`
 - **Remaining tasks:** MongoDB Atlas opt-in persistence, real labeled data for accuracy evaluation, MediaPipe/face-shape extraction, virtual try-on, and fashion trend prediction.
