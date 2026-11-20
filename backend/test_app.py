@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 
 from app import app
-from image_analysis import detect_faces, preprocess_image
+from image_analysis import classify_skin_tone, detect_faces, preprocess_image
 
 
 def make_image(extension="PNG", size=(200, 200), color=(180, 140, 120)):
@@ -107,3 +107,22 @@ def test_detect_faces_handles_blank_image():
     faces = detect_faces(image)
 
     assert faces == []
+
+
+def test_skin_tone_returns_unknown_when_no_skin_pixels():
+    image = np.full((300, 300, 3), (10, 10, 10), dtype=np.uint8)
+    face = {"x": 50, "y": 50, "width": 200, "height": 200}
+
+    result = classify_skin_tone(image, face)
+
+    assert result["skin_tone"] == "Unknown"
+    assert result["confidence"] == 0.0
+
+
+def test_skin_tone_returns_supported_category():
+    image = np.full((300, 300, 3), (120, 160, 210), dtype=np.uint8)
+    face = {"x": 50, "y": 50, "width": 200, "height": 200}
+
+    result = classify_skin_tone(image, face)
+
+    assert result["skin_tone"] in {"Fair", "Medium", "Wheatish", "Deep"}

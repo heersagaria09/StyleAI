@@ -53,3 +53,51 @@ def detect_faces(image):
             "height": int(height),
         })
     return faces
+
+
+def classify_skin_tone(image, face):
+    x, y, width, height = face["x"], face["y"], face["width"], face["height"]
+    if width <= 0 or height <= 0:
+        return {"skin_tone": "Unknown", "confidence": 0.0, "reason": "No valid face region."}
+
+    roi_x1 = max(0, x + round(width * 0.20))
+    roi_x2 = min(image.shape[1], x + round(width * 0.80))
+    roi_y1 = max(0, y + round(height * 0.30))
+    roi_y2 = min(image.shape[0], y + round(height * 0.82))
+    roi = image[roi_y1:roi_y2, roi_x1:roi_x2]
+    if roi.size == 0:
+        return {"skin_tone": "Unknown", "confidence": 0.0, "reason": "Face region is outside the image."}
+
+    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+    ycrcb = cv2.cvtColor(roi, cv2.COLOR_BGR2YCrCb)
+    hsv_mask = cv2.inRange(hsv, (0, 15, 35), (35, 170, 255))
+    ycrcb_mask = cv2.inRange(ycrcb, (0, 135, 85), (255, 180, 135))
+    mask = cv2.bitwise_and(hsv_mask, ycrcb_mask)
+
+    pixels = roi[mask > 0]
+    if pixels.shape[0] < 40:
+        return {"skin_tone": "Unknown", "confidence": 0.0, "reason": "Reliable skin pixels were not detected."}
+
+    lab = cv2.cvtColor(pixels.reshape(-1, 1, 3), cv2.COLOR_BGR2LAB)
+    luminance = float(np.median(lab[:, 0, 0]))
+    chroma_a = float(np.median(lab[:, 0, 1]))
+    chroma_b = float(np.median(lab[:, 0, 2]))
+
+    if luminance >= 205:
+        skin_tone = "Fair"
+    elif luminance >= 178:
+        skin_tone = "Medium"
+    elif luminance >= 150:
+        skin_tone = "Wheatish"
+    else:
+        skin_tone = "Deep"
+
+    coverage = pixels.shape[0] / roi.shape[0] / roi.shape[1]
+    confidence = round(min(99.0, max(25.0, coverage * 100.0)), 1)
+    return {
+        "skin_tone": skin_tone,
+        "confidence": confidence,
+        "luminance": round(luminance, 1),
+        "chroma_a": round(chroma_a, 1),
+        "chroma_b": round(chroma_b, 1),
+    }
