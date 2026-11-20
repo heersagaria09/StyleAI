@@ -2,8 +2,11 @@ import io
 
 from PIL import Image
 import pytest
+import cv2
+import numpy as np
 
 from app import app
+from image_analysis import preprocess_image
 
 
 def make_image(extension="PNG", size=(200, 200), color=(180, 140, 120)):
@@ -85,3 +88,14 @@ def test_rejects_oversized_image(client):
     )
     assert response.status_code == 400
     assert "10 MB" in response.get_json()["error"]
+
+
+def test_preprocesses_image(tmp_path):
+    source = tmp_path / "source.png"
+    image = np.full((1200, 800, 3), (100, 120, 140), dtype=np.uint8)
+    cv2.imwrite(str(source), image)
+
+    processed = preprocess_image(source)
+
+    assert processed.shape[:2] == (1024, 683)
+    assert processed.dtype == np.uint8
