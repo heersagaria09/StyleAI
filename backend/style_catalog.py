@@ -159,3 +159,48 @@ def get_color_avoidance(skin_tone):
 
 def get_hairstyle_guide(face_shape):
     return _HAIRSTYLES[face_shape]
+
+
+def get_photo_style_guide(skin_tone, face_shape):
+    color_palettes = _PALETTES.get(skin_tone, {})
+    colors_to_avoid = get_color_avoidance(skin_tone) if skin_tone in _AVOID_COLORS else []
+    hairstyle = None
+    jewelry = None
+    detected_attributes = []
+
+    if color_palettes:
+        color_palettes = {
+            style: colors.copy()
+            for style, colors in color_palettes.items()
+        }
+        detected_attributes.append("estimated skin tone")
+    if face_shape in _HAIRSTYLES:
+        recommendation, best, avoid = get_hairstyle_guide(face_shape)
+        hairstyle = {
+            "recommendation": recommendation,
+            "best": best,
+            "avoid": avoid,
+        }
+        jewelry = {
+            "earrings": _EARRINGS[face_shape],
+            "necklace": _NECKLACES[face_shape],
+        }
+        detected_attributes.append("estimated face shape")
+
+    if detected_attributes:
+        features = " and ".join(detected_attributes)
+        note = (
+            f"These suggestions use only the photo's {features}. "
+            "Body type, occasion, personal style, and clothing fit are not inferred."
+        )
+    else:
+        note = "No reliable skin tone or face shape was detected. Try a clear, front-facing photo with one person."
+    return {
+        "available": bool(detected_attributes),
+        "detected_attributes": detected_attributes,
+        "color_palettes": color_palettes,
+        "colors_to_avoid": colors_to_avoid,
+        "hairstyle": hairstyle,
+        "jewelry": jewelry,
+        "note": note,
+    }

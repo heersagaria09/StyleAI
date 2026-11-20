@@ -7,10 +7,20 @@ from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from PIL import Image, UnidentifiedImageError
 
-from image_analysis import classify_skin_tone, detect_faces, preprocess_image
+from image_analysis import (
+    analyze_face_landmarks,
+    classify_skin_tone,
+    detect_faces,
+    preprocess_image,
+)
 from recommendation_model import get_recommendations, model_status
 from storage import mongodb_status, save_recommendation
-from style_catalog import get_body_type_guide, get_color_avoidance, get_hairstyle_guide
+from style_catalog import (
+    get_body_type_guide,
+    get_color_avoidance,
+    get_hairstyle_guide,
+    get_photo_style_guide,
+)
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -104,12 +114,26 @@ def upload_photo():
     try:
         processed = preprocess_image(stored_path)
         faces = detect_faces(processed)
+        landmark_analysis = analyze_face_landmarks(processed)
         detected = {"face_shape": "Unknown", "skin_tone": "Unknown"}
         analysis_note = "No face detected. Select categories manually."
+        if landmark_analysis["face_count"] == 1:
+            detected["face_shape"] = landmark_analysis["face_shape"]
+            analysis_note = (
+                "Face shape is a landmark-based estimate; verify or change it manually."
+            )
+        elif landmark_analysis["face_count"] > 1:
+            analysis_note = "Multiple faces detected. Select categories manually."
+
         if len(faces) == 1:
             detected.update(classify_skin_tone(processed, faces[0]))
-            analysis_note = "Face shape requires manual selection."
+            if landmark_analysis["face_count"] == 0:
+                analysis_note = (
+                    "Skin tone estimated; face landmarks were not found. "
+                    "Select face shape manually."
+                )
         elif len(faces) > 1:
+            detected["face_shape"] = "Unknown"
             analysis_note = "Multiple faces detected. Select categories manually."
     except (ValueError, RuntimeError, OSError, cv2.error) as error:
         stored_path.unlink(missing_ok=True)
@@ -123,8 +147,15 @@ def upload_photo():
         "height": height,
         "size_bytes": size,
         "face_count": len(faces),
+        "landmark_face_count": landmark_analysis["face_count"],
+        "face_landmarks": landmark_analysis["landmarks"],
+        "face_measurements": landmark_analysis["measurements"],
         "analysis_note": analysis_note,
         "detected": detected,
+        "photo_recommendations": get_photo_style_guide(
+            detected["skin_tone"],
+            detected["face_shape"],
+        ),
     })
 
 
@@ -191,9 +222,9 @@ def _build_recommendations(profile):
     else:
         bmi_category = "Obese"
 
-    model_basis = "ML prototype"
+    model_basis = "Neural-network prototype"
     return {
-        "recommendation_method": "synthetic_ml_prototype",
+        "recommendation_method": "experimental_synthetic_neural_network",
         "model_info": model_status(),
         "recommendations": {
             "outfit": {"recommendation": predictions["outfit"], "basis": model_basis},

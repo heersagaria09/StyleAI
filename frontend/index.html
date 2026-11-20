@@ -23,7 +23,7 @@
   <!-- ── HERO ──────────────────────────────────────────────────────────── -->
   <section class="hero">
     <h1 class="hero-title">Discover Your Perfect Style</h1>
-    <p class="hero-sub">Tell us about yourself and get personalized outfit, color, hairstyle and jewelry recommendations in seconds.</p>
+    <p class="hero-sub">Upload a photo for instant color and face-shape suggestions, or complete your profile for outfit recommendations tailored to your body type and occasion.</p>
   </section>
 
   <!-- ── BODY TYPE GUIDE MODAL ─────────────────────────────────────────── -->
@@ -209,10 +209,26 @@
       <div class="upload-zone" id="uploadZone" onclick="document.getElementById('photoInput').click()">
         <input type="file" id="photoInput" accept="image/*" hidden />
         <div class="upload-icon">📷</div>
-        <p class="upload-title">Upload your photo <span class="badge-optional">optional</span></p>
-        <p class="upload-sub">Or select your skin tone and face shape manually below</p>
+        <p class="upload-title">Upload a photo for instant style suggestions <span class="badge-optional">optional</span></p>
+        <p class="upload-sub">Or use your camera. Photo-only suggestions use estimated skin tone and face shape; this app does not identify who you are.</p>
       </div>
+      <div class="camera-controls">
+        <button class="btn-secondary" type="button" id="startCameraBtn">Use camera</button>
+        <button class="btn-secondary" type="button" id="capturePhotoBtn" disabled>Capture photo</button>
+        <button class="btn-secondary hidden" type="button" id="stopCameraBtn">Close camera</button>
+      </div>
+      <video id="cameraPreview" class="camera-preview hidden" autoplay playsinline muted aria-label="Live camera preview"></video>
+      <p id="cameraStatus" class="hint" role="status" aria-live="polite"></p>
       <p id="uploadStatus" class="upload-status"></p>
+      <div id="analysisPreview" class="analysis-preview hidden">
+        <p id="analysisPreviewNote" class="hint"></p>
+        <canvas id="analysisCanvas" aria-label="Uploaded photo with detected face outline"></canvas>
+      </div>
+      <section id="photoRecommendations" class="photo-recommendations hidden" aria-labelledby="photoRecommendationsTitle" aria-live="polite">
+        <h3 id="photoRecommendationsTitle">Photo-only style suggestions</h3>
+        <p id="photoRecommendationsNote" class="hint"></p>
+        <div id="photoRecommendationsContent"></div>
+      </section>
 
       <label class="save-profile-option">
         <input type="checkbox" id="saveToMongo" />
@@ -224,6 +240,9 @@
       <button class="btn-primary" id="getStyleBtn" onclick="getRecommendations()">
         <span class="btn-icon">✦</span>
         Get my style recommendations
+      </button>
+      <button class="btn-secondary hidden" type="button" id="getFullProfileBtn" onclick="getFullProfileRecommendations()">
+        Get full profile recommendations
       </button>
 
     </section>
@@ -353,7 +372,7 @@
   </div>
 
   <footer class="footer">
-    <p>StyleAI — personalized, rule-based fashion recommendations</p>
+    <p>StyleAI — experimental neural-network fashion recommendations</p>
   </footer>
 
   <script src="app.js"></script>

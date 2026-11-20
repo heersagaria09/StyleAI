@@ -1,8 +1,92 @@
 import cv2
+import mediapipe as mp
 import numpy as np
 
 
 MAX_ANALYSIS_SIZE = 1024
+FACE_OVAL_LANDMARKS = (
+    10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365,
+    379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93,
+    234, 127, 162, 21, 54, 103, 67, 109,
+)
+
+
+def _distance(landmarks, first, second):
+    return float(np.hypot(
+        landmarks[first].x - landmarks[second].x,
+        landmarks[first].y - landmarks[second].y,
+    ))
+
+
+def estimate_face_shape(landmarks):
+    face_length = abs(landmarks[10].y - landmarks[152].y)
+    cheek_width = _distance(landmarks, 234, 454)
+    forehead_width = _distance(landmarks, 103, 332)
+    jaw_width = _distance(landmarks, 172, 397)
+    if min(face_length, cheek_width, forehead_width, jaw_width) <= 0:
+        return "Unknown", {}
+
+    length_to_width = face_length / cheek_width
+    forehead_to_jaw = forehead_width / jaw_width
+    jaw_to_cheek = jaw_width / cheek_width
+    cheek_to_forehead = cheek_width / forehead_width
+
+    if forehead_to_jaw >= 1.15 and jaw_to_cheek <= 0.85:
+        shape = "Heart"
+    elif (
+        length_to_width >= 1.30
+        and cheek_to_forehead >= 1.10
+        and cheek_width / jaw_width >= 1.10
+    ):
+        shape = "Diamond"
+    elif length_to_width < 1.25 and jaw_to_cheek >= 0.88:
+        shape = "Square"
+    elif length_to_width < 1.30 and jaw_to_cheek < 0.88:
+        shape = "Round"
+    else:
+        shape = "Oval"
+
+    return shape, {
+        "face_length_to_cheek_width": round(length_to_width, 3),
+        "forehead_to_jaw_width": round(forehead_to_jaw, 3),
+        "jaw_to_cheek_width": round(jaw_to_cheek, 3),
+    }
+
+
+def analyze_face_landmarks(image):
+    rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    with mp.solutions.face_mesh.FaceMesh(
+        static_image_mode=True,
+        max_num_faces=2,
+        refine_landmarks=False,
+        min_detection_confidence=0.5,
+    ) as face_mesh:
+        result = face_mesh.process(rgb_image)
+
+    faces = result.multi_face_landmarks or []
+    analysis = {
+        "face_count": len(faces),
+        "face_shape": "Unknown",
+        "landmarks": [],
+        "measurements": {},
+    }
+    if len(faces) != 1:
+        return analysis
+
+    landmarks = faces[0].landmark
+    shape, measurements = estimate_face_shape(landmarks)
+    analysis.update({
+        "face_shape": shape,
+        "landmarks": [
+            {
+                "x": round(float(landmarks[index].x), 6),
+                "y": round(float(landmarks[index].y), 6),
+            }
+            for index in FACE_OVAL_LANDMARKS
+        ],
+        "measurements": measurements,
+    })
+    return analysis
 
 
 def preprocess_image(image_path):

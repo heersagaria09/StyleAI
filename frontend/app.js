@@ -23,6 +23,10 @@ const COLOR_HEX = {
 
 const OCCASIONS = ["Casual", "College", "Office", "Wedding", "Party"];
 let lastPayload = null;   // remembers the last submitted profile for occasion-switch
+let personImage = null;
+let personImageUrl = null;
+let photoWasUploaded = false;
+let photoRecommendationsAvailable = false;
 
 // ── Confidence badge ───────────────────────────────────────────────────────
 function setConfBadge(id, val) {
@@ -64,7 +68,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // ── Main recommendation call ───────────────────────────────────────────────
 async function getRecommendations() {
+  if (photoWasUploaded) {
+    if (photoRecommendationsAvailable) {
+      document.getElementById("photoRecommendations").scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    } else {
+      document.getElementById("uploadStatus").textContent =
+        "No reliable face features were detected. Try a clear, front-facing photo with one person.";
+    }
+    return;
+  }
+  await getFullProfileRecommendations();
+}
+
+async function getFullProfileRecommendations() {
   const btn = document.getElementById("getStyleBtn");
+  const profileBtn = document.getElementById("getFullProfileBtn");
+  const submitButton = photoWasUploaded ? profileBtn : btn;
 
   const ft     = parseInt(document.getElementById("height_ft").value || 0);
   const inches = parseInt(document.getElementById("height_in").value || 0);
@@ -98,11 +120,12 @@ async function getRecommendations() {
     return;
   }
 
-  await fetchAndRender(payload, btn);
+  await fetchAndRender(payload, submitButton);
 }
 
 // ── Shared fetch + render (used by both main button and occasion switch) ───
 async function fetchAndRender(payload, btn) {
+  const originalButtonHtml = btn ? btn.innerHTML : "";
   if (btn) {
     btn.disabled  = true;
     btn.innerHTML = '<span class="btn-icon">⟳</span> Analyzing...';
@@ -133,7 +156,7 @@ async function fetchAndRender(payload, btn) {
   } finally {
     if (btn) {
       btn.disabled  = false;
-      btn.innerHTML = '<span class="btn-icon">✦</span> Get my style recommendations';
+      btn.innerHTML = originalButtonHtml;
     }
     document.getElementById("loading").classList.add("hidden");
   }
@@ -192,11 +215,13 @@ function renderResults(data) {
   `;
 
   // ── Style score ──────────────────────────────────────────────────────────
-  const method = data.recommendation_method === "synthetic_ml_prototype" ? "ML demo" : "Unknown";
+  const method = data.recommendation_method === "experimental_synthetic_neural_network"
+    ? "Neural-net demo"
+    : "Unknown";
   document.getElementById("styleScoreCard").innerHTML = `
     <span class="score-label">Recommendation method</span>
     <span class="score-number">${method}</span>
-    <span class="score-max">synthetic, not validated</span>
+    <span class="score-max">generated labels; unvalidated</span>
   `;
 
   // ── Occasion switch buttons ─────────────────────────────────────────────
@@ -345,7 +370,7 @@ function buildPrintReport(data) {
       </div>
       <div class="print-item">
         <h4>Recommendation method</h4>
-        <p>ML prototype trained on generated examples</p>
+        <p>Experimental neural network trained on generated labels; not validated</p>
       </div>
     </div>
 
@@ -389,40 +414,318 @@ function downloadReport() {
 // ── Photo upload ───────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
   const photoInput   = document.getElementById("photoInput");
-  const uploadStatus = document.getElementById("uploadStatus");
-
-  photoInput.addEventListener("change", async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    uploadStatus.textContent = "⏳ Uploading...";
-    const form = new FormData();
-    form.append("photo", file);
-
-    try {
-      const res  = await fetch(`${API}/upload`, { method: "POST", body: form });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Image upload failed.");
-
-      if (data.detected) {
-        const d = data.detected;
-        if (d.face_shape && d.face_shape !== "Unknown") {
-          document.getElementById("face_shape").value = d.face_shape;
-        }
-        if (d.skin_tone && d.skin_tone !== "Unknown") {
-          document.getElementById("skin_tone").value = d.skin_tone;
-        }
-        uploadStatus.textContent = d.face_shape !== "Unknown" || d.skin_tone !== "Unknown"
-          ? `✅ Detected — Face: ${d.face_shape} · Skin: ${d.skin_tone}. ${data.analysis_note || ""}`
-          : `✅ Photo uploaded. ${data.analysis_note || "Continue with manual category selection."}`;
-      } else {
-        uploadStatus.textContent = "✅ Photo uploaded. Categories are available for manual selection.";
-      }
-    } catch (err) {
-      uploadStatus.textContent = `${err.message} Continue with manual category selection.`;
-    }
-  });
+  photoInput.addEventListener("change", (event) => processPhotoFile(event.target.files[0]));
+  document.getElementById("startCameraBtn").addEventListener("click", startCamera);
+  document.getElementById("capturePhotoBtn").addEventListener("click", captureCameraPhoto);
+  document.getElementById("stopCameraBtn").addEventListener("click", stopCamera);
+  window.addEventListener("pagehide", stopCamera);
 });
+
+let cameraStream = null;
+
+async function startCamera() {
+  const status = document.getElementById("cameraStatus");
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    status.textContent = "Camera access requires localhost or HTTPS. You can upload a photo instead.";
+    return;
+  }
+
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: "user" } },
+      audio: false,
+    });
+    const video = document.getElementById("cameraPreview");
+    video.srcObject = cameraStream;
+    await video.play();
+    video.classList.remove("hidden");
+    document.getElementById("capturePhotoBtn").disabled = false;
+    document.getElementById("startCameraBtn").disabled = true;
+    document.getElementById("stopCameraBtn").classList.remove("hidden");
+    status.textContent = "Camera ready. Center your face and capture a photo.";
+  } catch (error) {
+    stopCamera();
+    status.textContent = error.name === "NotAllowedError" || error.name === "SecurityError"
+      ? "Camera permission was denied or blocked. Allow access in your browser, or upload a photo."
+      : error.name === "NotFoundError"
+        ? "No camera was found. Connect a camera or upload a photo."
+        : `Could not access the camera: ${error.message}`;
+  }
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach((track) => track.stop());
+    cameraStream = null;
+  }
+  const video = document.getElementById("cameraPreview");
+  if (video) video.srcObject = null;
+  if (video) video.classList.add("hidden");
+  const captureButton = document.getElementById("capturePhotoBtn");
+  if (captureButton) captureButton.disabled = true;
+  const startButton = document.getElementById("startCameraBtn");
+  if (startButton) startButton.disabled = false;
+  const stopButton = document.getElementById("stopCameraBtn");
+  if (stopButton) stopButton.classList.add("hidden");
+}
+
+async function captureCameraPhoto() {
+  const video = document.getElementById("cameraPreview");
+  if (!cameraStream || !video.videoWidth || !video.videoHeight) {
+    document.getElementById("cameraStatus").textContent =
+      "The camera is not ready yet. Wait for the preview or upload a photo.";
+    return;
+  }
+
+  const canvas = document.createElement("canvas");
+  const scale = Math.min(1, 1024 / Math.max(video.videoWidth, video.videoHeight));
+  canvas.width = Math.round(video.videoWidth * scale);
+  canvas.height = Math.round(video.videoHeight * scale);
+  const context = canvas.getContext("2d");
+  if (!context) {
+    document.getElementById("cameraStatus").textContent =
+      "Could not capture from the camera. You can upload a photo instead.";
+    return;
+  }
+  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  try {
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob((result) => {
+        if (result) resolve(result);
+        else reject(new Error("The camera image could not be encoded."));
+      }, "image/jpeg", 0.92);
+    });
+    const file = new File([blob], "camera-capture.jpg", { type: "image/jpeg" });
+    stopCamera();
+    document.getElementById("cameraStatus").textContent = "Captured. Analyzing your photo…";
+    await processPhotoFile(file);
+  } catch (error) {
+    document.getElementById("cameraStatus").textContent = error.message;
+  }
+}
+
+async function processPhotoFile(file) {
+  const uploadStatus = document.getElementById("uploadStatus");
+  if (!file) return;
+  document.getElementById("photoRecommendations").classList.add("hidden");
+  document.getElementById("photoRecommendationsContent").replaceChildren();
+  setPhotoRecommendationMode(false, false);
+  if (!isSupportedLocalImage(file)) {
+    uploadStatus.textContent = "Choose a JPG, PNG, or WEBP image smaller than 10 MB.";
+    return;
+  }
+
+  if (personImageUrl) URL.revokeObjectURL(personImageUrl);
+  personImage = null;
+  personImageUrl = null;
+  document.getElementById("analysisPreview").classList.add("hidden");
+  uploadStatus.textContent = "Loading photo…";
+
+  try {
+    const loaded = await loadLocalImage(file);
+    personImage = loaded.image;
+    personImageUrl = loaded.url;
+    drawAnalysisPreview([]);
+  } catch {
+    uploadStatus.textContent = "Could not preview this image. You can still select the categories manually.";
+    return;
+  }
+
+  uploadStatus.textContent = "Uploading and analyzing…";
+  const form = new FormData();
+  form.append("photo", file);
+
+  try {
+    const res = await fetch(`${API}/upload`, { method: "POST", body: form });
+    const responseText = await res.text();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      const serverHint = res.status >= 500
+        ? " Check the Flask terminal and restart with the project virtual environment."
+        : "";
+      throw new Error(`Photo analysis returned an invalid response (HTTP ${res.status}).${serverHint}`);
+    }
+    if (!res.ok) throw new Error(data.error || "Image upload failed.");
+
+    if (data.detected) {
+      const d = data.detected;
+      const detectedItems = [];
+      if (d.face_shape && d.face_shape !== "Unknown") {
+        document.getElementById("face_shape").value = d.face_shape;
+        detectedItems.push(`estimated face shape: ${d.face_shape}`);
+      }
+      if (d.skin_tone && d.skin_tone !== "Unknown") {
+        document.getElementById("skin_tone").value = d.skin_tone;
+        detectedItems.push(`skin tone: ${d.skin_tone}`);
+      }
+      if (data.face_landmarks && data.face_landmarks.length) {
+        drawAnalysisPreview(data.face_landmarks);
+      }
+      uploadStatus.textContent = detectedItems.length
+        ? `Photo analyzed — ${detectedItems.join(" · ")}. ${data.analysis_note || ""}`
+        : `Photo uploaded. ${data.analysis_note || "Continue with manual category selection."}`;
+    } else {
+      uploadStatus.textContent = "✅ Photo uploaded. Categories are available for manual selection.";
+    }
+    renderPhotoRecommendations(data.photo_recommendations);
+    setPhotoRecommendationMode(true, Boolean(data.photo_recommendations && data.photo_recommendations.available));
+  } catch (error) {
+    uploadStatus.textContent = `${error.message} You can still use the local preview and choose categories manually.`;
+  }
+}
+
+function isSupportedLocalImage(file) {
+  return ["image/jpeg", "image/png", "image/webp"].includes(file.type)
+    && file.size > 0
+    && file.size <= 10 * 1024 * 1024;
+}
+
+function loadLocalImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      if (image.naturalWidth * image.naturalHeight > 25_000_000) {
+        URL.revokeObjectURL(url);
+        reject(new Error("Image dimensions exceed the preview limit."));
+        return;
+      }
+      resolve({ image, url });
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Image could not be decoded."));
+    };
+    image.src = url;
+  });
+}
+
+function canvasSizeFor(image) {
+  const scale = Math.min(1, 1024 / Math.max(image.naturalWidth, image.naturalHeight));
+  return {
+    width: Math.max(1, Math.round(image.naturalWidth * scale)),
+    height: Math.max(1, Math.round(image.naturalHeight * scale)),
+  };
+}
+
+function drawAnalysisPreview(landmarks) {
+  if (!personImage) return;
+  const preview = document.getElementById("analysisPreview");
+  const note = document.getElementById("analysisPreviewNote");
+  const canvas = document.getElementById("analysisCanvas");
+  const size = canvasSizeFor(personImage);
+  canvas.width = size.width;
+  canvas.height = size.height;
+  const context = canvas.getContext("2d");
+  context.drawImage(personImage, 0, 0, size.width, size.height);
+
+  if (landmarks.length > 2) {
+    note.textContent =
+      "Face outline landmarks are shown for an approximate estimate. Verify or change the face-shape selection above.";
+    context.beginPath();
+    landmarks.forEach((point, index) => {
+      const x = point.x * size.width;
+      const y = point.y * size.height;
+      if (index === 0) context.moveTo(x, y);
+      else context.lineTo(x, y);
+    });
+    context.closePath();
+    context.strokeStyle = "#ffcc55";
+    context.lineWidth = Math.max(2, size.width / 300);
+    context.stroke();
+  } else {
+    note.textContent =
+      "No face landmarks were detected. Continue with manual face-shape selection.";
+  }
+  preview.classList.remove("hidden");
+}
+
+function renderPhotoRecommendations(data) {
+  const panel = document.getElementById("photoRecommendations");
+  const note = document.getElementById("photoRecommendationsNote");
+  const content = document.getElementById("photoRecommendationsContent");
+  content.replaceChildren();
+  if (!data) return;
+
+  note.textContent = data.note;
+  for (const [style, colors] of Object.entries(data.color_palettes || {})) {
+    const palette = document.createElement("section");
+    palette.className = "photo-palette-group";
+    const title = document.createElement("h4");
+    title.textContent = `${style} palette`;
+    const swatches = document.createElement("div");
+    swatches.className = "swatches";
+
+    colors.forEach((name) => {
+      const swatch = document.createElement("div");
+      swatch.className = "swatch";
+      const circle = document.createElement("div");
+      circle.className = "swatch-circle";
+      circle.style.background = COLOR_HEX[name] || "#cccccc";
+      const label = document.createElement("span");
+      label.className = "swatch-label";
+      label.textContent = name;
+      swatch.append(circle, label);
+      swatches.appendChild(swatch);
+    });
+
+    palette.append(title, swatches);
+    content.appendChild(palette);
+  }
+
+  if (data.colors_to_avoid && data.colors_to_avoid.length) {
+    const avoid = document.createElement("p");
+    avoid.className = "photo-recommendation-detail";
+    avoid.textContent = `Colors to avoid: ${data.colors_to_avoid.join(", ")}`;
+    content.appendChild(avoid);
+  }
+
+  if (data.hairstyle || data.jewelry) {
+    const faceSuggestions = document.createElement("section");
+    faceSuggestions.className = "photo-face-suggestions";
+    const title = document.createElement("h4");
+    title.textContent = "Face-shape suggestions";
+    faceSuggestions.appendChild(title);
+
+    if (data.hairstyle) {
+      const hairstyle = document.createElement("p");
+      hairstyle.className = "photo-recommendation-detail";
+      hairstyle.textContent = `Hairstyle: ${data.hairstyle.recommendation}`;
+      faceSuggestions.appendChild(hairstyle);
+    }
+    if (data.jewelry) {
+      const jewelry = document.createElement("p");
+      jewelry.className = "photo-recommendation-detail";
+      jewelry.textContent =
+        `Accessories: ${data.jewelry.earrings}; ${data.jewelry.necklace}.`;
+      faceSuggestions.appendChild(jewelry);
+    }
+    content.appendChild(faceSuggestions);
+  }
+
+  panel.classList.remove("hidden");
+}
+
+function setPhotoRecommendationMode(uploaded, available) {
+  photoWasUploaded = uploaded;
+  photoRecommendationsAvailable = available;
+  const photoButton = document.getElementById("getStyleBtn");
+  const profileButton = document.getElementById("getFullProfileBtn");
+
+  if (!uploaded) {
+    photoButton.innerHTML = '<span class="btn-icon">✦</span> Get my style recommendations';
+    profileButton.classList.add("hidden");
+    return;
+  }
+
+  photoButton.innerHTML = available
+    ? '<span class="btn-icon">✦</span> View photo-only suggestions'
+    : '<span class="btn-icon">✦</span> Photo suggestions unavailable';
+  profileButton.classList.remove("hidden");
+}
 
 // ── Reset form ─────────────────────────────────────────────────────────────
 function resetForm() {
@@ -439,6 +742,16 @@ function resetForm() {
   document.getElementById("uploadStatus").textContent = "";
   document.getElementById("saveToMongo").checked = false;
   document.getElementById("saveStatus").textContent = "";
+  document.getElementById("photoInput").value = "";
+  stopCamera();
+  document.getElementById("cameraStatus").textContent = "";
+  document.getElementById("analysisPreview").classList.add("hidden");
+  document.getElementById("photoRecommendations").classList.add("hidden");
+  document.getElementById("photoRecommendationsContent").replaceChildren();
+  setPhotoRecommendationMode(false, false);
+  if (personImageUrl) URL.revokeObjectURL(personImageUrl);
+  personImage = null;
+  personImageUrl = null;
   lastPayload = null;
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
