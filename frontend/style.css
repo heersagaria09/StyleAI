@@ -426,22 +426,12 @@ body {
   margin-bottom: 4px;
 }
 
-.score-number {
-  font-family: 'Playfair Display', serif;
-  font-size: 36px;
-  font-weight: 700;
-  color: var(--gold);
-  line-height: 1;
-}
-
-.score-max {
-  font-size: 12px;
-  color: #ED93B1;
-  margin-top: 2px;
-}
-
-.match-feedback { width: 100%; margin-top: 10px; text-align: center; }
-.match-feedback-label { display: block; color: #FBEAF0; font-size: 11px; margin-bottom: 6px; }
+.match-score { display: flex; flex-direction: column; align-items: center; line-height: 1.1; }
+.match-score-value { color: var(--gold); font-family: 'Playfair Display', serif; font-size: 42px; font-weight: 700; }
+.match-score-denominator { color: #FBEAF0; font-size: 13px; }
+.match-score-caption { margin-top: 5px; color: #ED93B1; font-size: 10px; text-align: center; }
+.match-feedback { width: 100%; margin-top: 6px; text-align: center; }
+.match-feedback-label { display: block; color: #FBEAF0; font-size: 13px; margin-bottom: 8px; }
 .match-rating-buttons { display: flex; justify-content: center; gap: 5px; }
 .match-rating-button {
   width: 26px;
@@ -455,8 +445,9 @@ body {
 }
 .match-rating-button:hover,
 .match-rating-button.selected { background: var(--gold); border-color: var(--gold); color: var(--rose-dark); }
-.match-feedback-status { display: block; min-height: 14px; margin-top: 5px; color: #FBEAF0; font-size: 11px; }
-.match-feedback-note { display: block; margin-top: 3px; color: #ED93B1; font-size: 9px; }
+.match-feedback-endpoints { display: flex; justify-content: space-between; max-width: 180px; margin: 4px auto 0; color: #ED93B1; font-size: 10px; }
+.match-feedback-status { display: block; min-height: 16px; margin-top: 8px; color: #FBEAF0; font-size: 12px; }
+.match-feedback-note { display: block; margin-top: 6px; color: #ED93B1; font-size: 10px; }
 
 /* ── Occasion quick switch ────────────────────────────────────────────────── */
 .occasion-switch {

@@ -215,19 +215,20 @@ function renderResults(data) {
   `;
 
   // ── Style score ──────────────────────────────────────────────────────────
-  const method = data.recommendation_method === "experimental_synthetic_neural_network"
-    ? "Style AI prototype"
-    : "Unknown";
   const styleScoreCard = document.getElementById("styleScoreCard");
   styleScoreCard.innerHTML = `
-    <span class="score-label">Recommendation method</span>
-    <span class="score-number">${method}</span>
-    <span class="score-max">Generated examples; real-world accuracy untested</span>
+    <span class="score-label">Style match</span>
+    <div class="match-score">
+      <span class="match-score-value" id="matchScoreValue">—</span>
+      <span class="match-score-denominator">out of 100</span>
+    </div>
+    <span class="match-score-caption" id="matchScoreCaption">Rate the suggestions to see your score</span>
     <div class="match-feedback" role="group" aria-labelledby="matchFeedbackLabel">
-      <span class="match-feedback-label" id="matchFeedbackLabel">How well did this match your style?</span>
+      <span class="match-feedback-label" id="matchFeedbackLabel">How well do these suggestions fit your style?</span>
       <div class="match-rating-buttons" id="matchRatingButtons"></div>
-      <span class="match-feedback-status" id="matchFeedbackStatus" aria-live="polite">Not rated</span>
-      <small class="match-feedback-note">Your rating is feedback, not model accuracy.</small>
+      <div class="match-feedback-endpoints"><span>Not at all</span><span>Very well</span></div>
+      <span class="match-feedback-status" id="matchFeedbackStatus" aria-live="polite">Not rated yet</span>
+      <small class="match-feedback-note">This score reflects your feedback, not model accuracy.</small>
     </div>
   `;
   const ratingLabels = ["Not at all", "A little", "Somewhat", "Mostly", "Very well"];
@@ -247,8 +248,11 @@ function renderResults(data) {
       });
       button.classList.add("selected");
       button.setAttribute("aria-pressed", "true");
+      styleScoreCard.querySelector("#matchScoreValue").textContent = String(rating * 20);
+      styleScoreCard.querySelector("#matchScoreCaption").textContent =
+        `Based on your ${rating}/5 rating`;
       styleScoreCard.querySelector("#matchFeedbackStatus").textContent =
-        `Your match rating: ${rating}/5 — ${label}.`;
+        `Your rating: ${rating}/5 — ${label}.`;
     });
     ratingButtons.appendChild(button);
   });
@@ -398,8 +402,8 @@ function buildPrintReport(data) {
         <small>${stats.height_inches}" · ${stats.weight_kg} kg</small>
       </div>
       <div class="print-item">
-        <h4>Recommendation method</h4>
-        <p>Experimental style model trained on generated examples; real-world accuracy is untested.</p>
+        <h4>About these suggestions</h4>
+        <p>Experimental recommendations; accuracy has not been measured.</p>
       </div>
     </div>
 

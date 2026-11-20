@@ -153,5 +153,5 @@
 - **Feature:** User-rated recommendation match
 - **Development step:** Let users rate how well the generated style result matches them
 - **Files:** `README.md`, `DEVELOPMENT_LOG.md`, `frontend/app.js`, `frontend/style.css`
-- **Implementation summary:** Added an accessible 1–5 rating control to the recommendation card. The displayed rating is explicitly self-reported, is not represented as model accuracy, and is not persisted or used for training.
+- **Implementation summary:** Added an accessible 1–5 rating control to the recommendation card and display the selected rating scaled to a score out of 100. The score is explicitly self-reported, is not represented as model accuracy, and is not persisted or used for training.
 - **Tests:** `node --check frontend/app.js`; `git diff --check`.
