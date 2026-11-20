@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StyleAI — Personal Fashion Advisor</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- ── HEADER ─────────────────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">✦</span>
+        <span class="logo-text">StyleAI</span>
+      </div>
+      <p class="tagline">Your personal fashion advisor, powered by AI</p>
+    </div>
+  </header>
+
+  <!-- ── HERO ──────────────────────────────────────────────────────────── -->
+  <section class="hero">
+    <h1 class="hero-title">Discover Your Perfect Style</h1>
+    <p class="hero-sub">Tell us about yourself and get personalized outfit, color, hairstyle and jewelry recommendations in seconds.</p>
+  </section>
+
+  <!-- ── BODY TYPE GUIDE MODAL ─────────────────────────────────────────── -->
+  <div class="modal-overlay hidden" id="bodyTypeModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Which body type are you?</h3>
+        <button class="modal-close" onclick="closeBodyGuide()">✕</button>
+      </div>
+      <p class="modal-sub">Click your body type to auto-select it</p>
+      <div class="body-type-grid">
+
+        <div class="body-type-card" onclick="selectBodyType('Pear')">
+          <svg viewBox="0 0 80 120" class="body-svg">
+            <ellipse cx="40" cy="30" rx="16" ry="18" fill="#F4C0D1" stroke="#993356" stroke-width="1.5"/>
+            <ellipse cx="40" cy="85" rx="26" ry="28" fill="#F4C0D1" stroke="#993356" stroke-width="1.5"/>
+            <rect x="34" y="46" width="12" height="16" fill="#F4C0D1" stroke="#993356" stroke-width="1.5"/>
+          </svg>
+          <p class="bt-name">Pear</p>
+          <p class="bt-desc">Hips wider than shoulders</p>
+        </div>
+
+        <div class="body-type-card" onclick="selectBodyType('Apple')">
+          <svg viewBox="0 0 80 120" class="body-svg">
+            <ellipse cx="40" cy="28" rx="16" ry="16" fill="#F4C0D1" stroke="#993356" stroke-width="1.5"/>
+            <ellipse cx="40" cy="75" rx="26" ry="32" fill="#F4C0D1" stroke="#993356" stroke-width="1.5"/>
+            <rect x="34" y="42" width="12" height="16" fill="#F4C0D1" stroke="#993356" stroke-width="1.5"/>
+          </svg>
+          <p class="bt-name">Apple</p>
+          <p class="bt-desc">Fuller midsection, slim legs</p>
+        </div>
+
+        <div class="body-type-card" onclick="selectBodyType('Hourglass')">
+          <svg viewBox="0 0 80 120" class="body-svg">
+            <ellipse cx="40" cy="28" rx="22" ry="18" fill="#F4C0D1" stroke="#993356" stroke-width="1.5"/>
+            <ellipse cx="40" cy="90" rx="22" ry="20" fill="#F4C0D1" stroke="#993356" stroke-width="1.5"/>
+            <path d="M22 44 Q40 65 58 44" fill="none" stroke="#993356" stroke-width="1.5"/>
+            <path d="M22 72 Q40 55 58 72" fill="none" stroke="#993356" stroke-width="1.5"/>
+            <rect x="30" y="44" width="20" height="28" rx="4" fill="#F4C0D1" stroke="#993356" stroke-width="1.5"/>
+          </svg>
+          <p class="bt-name">Hourglass</p>
+          <p class="bt-desc">Shoulders = hips, defined waist</p>
+        </div>
+
+        <div class="body-type-card" onclick="selectBodyType('Rectangle')">
+          <svg viewBox="0 0 80 120" class="body-svg">
+            <ellipse cx="40" cy="28" rx="18" ry="16" fill="#F4C0D1" stroke="#993356" stroke-width="1.5"/>
+            <rect x="22" y="42" width="36" height="58" rx="6" fill="#F4C0D1" stroke="#993356" stroke-width="1.5"/>
+          </svg>
+          <p class="bt-name">Rectangle</p>
+          <p class="bt-desc">Shoulders = waist = hips</p>
+        </div>
+
+        <div class="body-type-card" onclick="selectBodyType('Inverted Triangle')">
+          <svg viewBox="0 0 80 120" class="body-svg">
+            <ellipse cx="40" cy="28" rx="18" ry="16" fill="#F4C0D1" stroke="#993356" stroke-width="1.5"/>
+            <polygon points="14,46 66,46 52,100 28,100" fill="#F4C0D1" stroke="#993356" stroke-width="1.5"/>
+          </svg>
+          <p class="bt-name">Inverted Triangle</p>
+          <p class="bt-desc">Shoulders wider than hips</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <main class="main">
+
+    <!-- ── INPUT FORM ──────────────────────────────────────────────────── -->
+    <section class="card form-card">
+      <div class="section-label">
+        <span class="label-dot"></span>
+        Step 1 — Your profile
+      </div>
+
+      <div class="form-grid">
+
+        <div class="form-group">
+          <label>Height</label>
+          <div class="height-row">
+            <div class="height-sub">
+              <input type="number" id="height_ft" placeholder="5" min="4" max="6" />
+              <span class="height-unit">ft</span>
+            </div>
+            <div class="height-sub">
+              <input type="number" id="height_in" placeholder="4" min="0" max="11" />
+              <span class="height-unit">in</span>
+            </div>
+          </div>
+          <span class="hint">e.g. 5 ft 4 in</span>
+        </div>
+
+        <div class="form-group">
+          <label>Weight (kg)</label>
+          <input type="number" id="weight" placeholder="e.g. 58" min="30" max="130" />
+        </div>
+
+        <div class="form-group">
+          <label>Age</label>
+          <input type="number" id="age" placeholder="e.g. 24" min="14" max="60" />
+        </div>
+
+        <div class="form-group">
+          <label>
+            Body Type
+            <button class="help-btn" onclick="openBodyGuide()" type="button">? Help me identify</button>
+          </label>
+          <select id="body_type">
+            <option value="">— Select —</option>
+            <option>Pear</option>
+            <option>Apple</option>
+            <option>Hourglass</option>
+            <option>Rectangle</option>
+            <option>Inverted Triangle</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Skin Tone</label>
+          <select id="skin_tone">
+            <option value="">— Select —</option>
+            <option>Fair</option>
+            <option>Medium</option>
+            <option>Wheatish</option>
+            <option>Deep</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Face Shape</label>
+          <select id="face_shape">
+            <option value="">— Select —</option>
+            <option>Round</option>
+            <option>Oval</option>
+            <option>Square</option>
+            <option>Heart</option>
+            <option>Diamond</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Hair Length</label>
+          <select id="hair_length">
+            <option>Short</option>
+            <option selected>Medium</option>
+            <option>Long</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Hair Texture</label>
+          <select id="hair_texture">
+            <option>Straight</option>
+            <option>Wavy</option>
+            <option>Curly</option>
+            <option>Coily</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Occasion</label>
+          <select id="occasion">
+            <option>Casual</option>
+            <option>College</option>
+            <option>Office</option>
+            <option>Wedding</option>
+            <option>Party</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Preferred Style</label>
+          <select id="preferred_style">
+            <option>Western</option>
+            <option>Traditional</option>
+            <option>Indo-Western</option>
+          </select>
+        </div>
+
+      </div>
+
+      <!-- Photo upload -->
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('photoInput').click()">
+        <input type="file" id="photoInput" accept="image/*" hidden />
+        <div class="upload-icon">📷</div>
+        <p class="upload-title">Upload your photo <span class="badge-optional">optional</span></p>
+        <p class="upload-sub">AI will auto-detect your skin tone and face shape</p>
+      </div>
+      <p id="uploadStatus" class="upload-status"></p>
+
+      <button class="btn-primary" id="getStyleBtn" onclick="getRecommendations()">
+        <span class="btn-icon">✦</span>
+        Get my style recommendations
+      </button>
+
+    </section>
+
+    <!-- ── LOADING ──────────────────────────────────────────────────────── -->
+    <div class="loading hidden" id="loading">
+      <div class="loading-spinner"></div>
+      <p>Analyzing your profile...</p>
+      <div class="loading-dots">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <!-- ── DIVIDER ──────────────────────────────────────────────────────── -->
+    <div class="section-divider" id="divider" style="display:none;">
+      <span>✦ Your Style Report ✦</span>
+    </div>
+
+    <!-- ── RESULTS ──────────────────────────────────────────────────────── -->
+    <section id="results" class="hidden">
+
+      <div class="section-label results-label">
+        <span class="label-dot"></span>
+        Step 2 — Your recommendations
+      </div>
+
+      <!-- Style score + BMI row -->
+      <div class="top-stats-row">
+        <div class="bmi-bar" id="bmiBar"></div>
+        <div class="style-score-card" id="styleScoreCard"></div>
+      </div>
+
+      <!-- Occasion quick switch -->
+      <div class="occasion-switch">
+        <p class="occasion-switch-label">✦ Switch occasion instantly:</p>
+        <div class="occasion-btns" id="occasionBtns"></div>
+      </div>
+
+      <!-- Result cards grid -->
+      <div class="results-grid">
+
+        <div class="result-card">
+          <div class="result-header">
+            <span class="result-icon">👗</span>
+            <h3>Outfit</h3>
+            <span class="confidence-badge" id="outfitConf"></span>
+          </div>
+          <p class="result-main" id="outfitText"></p>
+          <div class="result-tip" id="outfitTip"></div>
+          <div class="wear-tags" id="wearTags"></div>
+        </div>
+
+        <div class="result-card">
+          <div class="result-header">
+            <span class="result-icon">🎨</span>
+            <h3>Color palette</h3>
+          </div>
+          <p class="result-sub">Colors that suit you</p>
+          <div class="swatches" id="colorSwatches"></div>
+          <p class="result-sub avoid-label">Colors to avoid</p>
+          <div class="swatches" id="avoidSwatches"></div>
+          <p class="color-tip" id="colorTip"></p>
+        </div>
+
+        <div class="result-card">
+          <div class="result-header">
+            <span class="result-icon">💇</span>
+            <h3>Hairstyle</h3>
+            <span class="confidence-badge" id="hairstyleConf"></span>
+          </div>
+          <p class="result-main" id="hairstyleText"></p>
+          <div class="tag-list" id="hairstyleBest"></div>
+          <p class="avoid-text" id="hairstyleAvoid"></p>
+          <p class="color-tip" id="hairstyleTip"></p>
+        </div>
+
+        <div class="result-card jewelry-card">
+          <div class="result-header">
+            <span class="result-icon">💍</span>
+            <h3>Jewelry & accessories</h3>
+          </div>
+          <div class="jewelry-list" id="jewelryList"></div>
+          <div class="accessories-row" id="accessoriesList"></div>
+        </div>
+
+      </div>
+
+      <!-- Body type guide -->
+      <div class="card body-guide-card">
+        <div class="result-header">
+          <span class="result-icon">👘</span>
+          <h3>Your body type styling guide</h3>
+        </div>
+        <div class="body-guide-grid" id="bodyGuide"></div>
+      </div>
+
+      <!-- Avoid card -->
+      <div class="card avoid-card">
+        <div class="result-header">
+          <span class="result-icon">⚠️</span>
+          <h3>What to avoid</h3>
+        </div>
+        <div class="tag-list avoid-tags" id="avoidList"></div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="action-row">
+        <button class="btn-primary" onclick="downloadReport()">
+          <span class="btn-icon">⬇</span> Download style report
+        </button>
+        <button class="btn-secondary" onclick="resetForm()">
+          ← Start over
+        </button>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ── PRINT REPORT ───────────────────────────────────────────────────── -->
+  <div id="printArea" class="print-only">
+    <div class="print-header">
+      <h1>✦ StyleAI — My Style Report</h1>
+      <p id="printDate"></p>
+    </div>
+    <div id="printContent"></div>
+  </div>
+
+  <footer class="footer">
+    <p>StyleAI — AI-powered fashion recommendations · Built with Machine Learning</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
