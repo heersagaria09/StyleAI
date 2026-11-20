@@ -40,3 +40,16 @@
 - **Commit hash:** `cf662a17339ac59685719e40320a90d4ba348cfe`
 - **GitHub push status:** Successfully pushed and verified on `origin/main`
 - **Remaining tasks:** Skin tone detection, face shape detection, frontend result integration, recommendation APIs, virtual try-on, deep learning recommendations, trend prediction, and README update.
+
+### 4. Automatic skin-tone detection
+
+- **Feature:** Automatic skin-tone detection
+- **Development step:** Classify reliable skin pixels into supported tone categories
+- **Files:** `backend/image_analysis.py`, `backend/test_app.py`
+- **Implementation summary:** Added HSV/YCrCb skin-pixel masking inside the detected face region, LAB luminance classification, supported Fair/Medium/Wheatish/Deep categories, confidence reporting, and Unknown fallback.
+- **Tests:** `python -m pytest -q backend/test_app.py`
+- **Test results:** 11 upload, preprocessing, face-detection, and skin-tone tests passed.
+- **Git commit:** `feat: add automatic skin tone detection`
+- **Commit hash:** `86ad905f71dda3060382a5c7ca5ad60314ca5680`
+- **GitHub push status:** Successfully pushed and verified on `origin/main`
+- **Remaining tasks:** Face shape detection, frontend integration, recommendation APIs, virtual try-on, deep learning recommendations, trend prediction, README update, and end-to-end verification.
