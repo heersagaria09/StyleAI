@@ -53,3 +53,16 @@
 - **Commit hash:** `86ad905f71dda3060382a5c7ca5ad60314ca5680`
 - **GitHub push status:** Successfully pushed and verified on `origin/main`
 - **Remaining tasks:** Face shape detection, frontend integration, recommendation APIs, virtual try-on, deep learning recommendations, trend prediction, README update, and end-to-end verification.
+
+### 5. Manual category selection preference
+
+- **Feature:** AI-powered image upload analysis
+- **Development step:** Make manual skin-tone and face-shape selection the primary, clear fallback
+- **Files:** `frontend/index.html`, `frontend/app.js`
+- **Implementation summary:** Updated photo-upload copy to state that categories can be selected manually, and replaced backend/CV failure messaging with an instruction to continue manually.
+- **Tests:** `python -m pytest -q backend/test_app.py`
+- **Test results:** 11 upload and computer-vision module tests passed; frontend diff reviewed.
+- **Git commit:** `feat: make manual category selection primary`
+- **Commit hash:** `5a184c6cd4d25d2ad9032e6d3fee3d421a6b4bff`
+- **GitHub push status:** Successfully pushed and verified on `origin/main`
+- **Remaining tasks:** Face-shape detection, backend/frontend CV integration, recommendation APIs, virtual try-on, deep learning recommendations, trend prediction, README update, and end-to-end verification.
