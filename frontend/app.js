@@ -127,7 +127,7 @@ async function fetchAndRender(payload, btn) {
     renderResults(data);
 
   // NEW — matches your actual port
-} catch (err) {
+} catch {
   alert("Error: " + err.message + "\n\nMake sure Flask is running on port 8000.");
 } finally {
     if (btn) {
@@ -416,10 +416,10 @@ document.addEventListener("DOMContentLoaded", () => {
         uploadStatus.textContent =
           `✅ Detected — Face: ${d.face_shape} · Skin: ${d.skin_tone}`;
       } else {
-        uploadStatus.textContent = "✅ Photo uploaded. Fill the form manually.";
+        uploadStatus.textContent = "✅ Photo uploaded. Categories are available for manual selection.";
       }
-    } catch {
-      uploadStatus.textContent = "📸 Photo saved. CV analysis coming soon.";
+    } catch (err) {
+      uploadStatus.textContent = "Photo upload unavailable. Continue with manual category selection.";
     }
   });
 });
