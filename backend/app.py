@@ -8,6 +8,8 @@ from flask_cors import CORS
 from PIL import Image, UnidentifiedImageError
 
 from image_analysis import classify_skin_tone, detect_faces, preprocess_image
+from recommendation_model import get_recommendations, model_status
+from style_catalog import get_body_type_guide, get_color_avoidance, get_hairstyle_guide
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -35,6 +37,7 @@ HAIR_TEXTURES = {"Straight", "Wavy", "Curly", "Coily"}
 
 @app.errorhandler(413)
 def request_too_large(_error):
+    app.logger.warning("Rejected an oversized request: %s", _error)
     return jsonify({"error": "Image exceeds the 10 MB size limit."}), 413
 
 
@@ -45,7 +48,7 @@ def home():
 
 @app.get("/api/health")
 def health():
-    return jsonify({"status": "ok"})
+    return jsonify({"status": "ok", "recommendation_model": model_status()})
 
 
 @app.post("/api/upload")
@@ -160,71 +163,13 @@ def _validate_profile(payload):
 
 def _build_recommendations(profile):
     occasion = profile["occasion"]
-    style = profile["preferred_style"]
-    body_type = profile["body_type"]
-    skin_tone = profile["skin_tone"]
     face_shape = profile["face_shape"]
     hair_length = profile["hair_length"]
     hair_texture = profile["hair_texture"]
-
-    occasion_outfits = {
-        "Casual": "a relaxed top with straight-leg trousers",
-        "College": "a comfortable layered outfit with practical footwear",
-        "Office": "a tailored top with well-fitted trousers",
-        "Wedding": "an occasion-ready outfit with refined accessories",
-        "Party": "a statement outfit balanced with simple accessories",
-    }
-    style_descriptors = {
-        "Western": "Western",
-        "Traditional": "traditional",
-        "Indo-Western": "Indo-Western",
-    }
-    outfit = (
-        f"Try {style_descriptors[style]} styling for {occasion.lower()}: "
-        f"{occasion_outfits[occasion]}."
-    )
-
-    body_guides = {
-        "Pear": (["Structured tops", "A-line skirts", "Straight-leg trousers"], ["Unbalanced proportions"]),
-        "Apple": (["Open layers", "V-neck tops", "Straight-leg trousers"], ["Restrictive waistbands"]),
-        "Hourglass": (["Wrap styles", "Defined-waist outfits", "Balanced necklines"], ["Hiding every waist detail"]),
-        "Rectangle": (["Layered outfits", "Belts and waist definition", "Textured separates"], ["Overly boxy head-to-toe looks"]),
-        "Inverted Triangle": (["V-neck tops", "Flowing skirts", "Wide-leg trousers"], ["Adding excess shoulder volume"]),
-    }
-    what_to_wear, what_to_avoid = body_guides[body_type]
-
-    palettes = {
-        "Fair": (["Teal", "Coral", "Navy Blue"], ["Washed-out Beige"]),
-        "Medium": (["Emerald Green", "Royal Blue", "Burgundy"], ["Muted Grey"]),
-        "Wheatish": (["Terracotta", "Olive Green", "Teal"], ["Washed-out Beige"]),
-        "Deep": (["Mustard", "Ivory", "Electric Blue"], ["Ash Grey"]),
-    }
-    colors_to_wear, colors_to_avoid = palettes[skin_tone]
-
-    hairstyles = {
-        "Oval": ("Layers, side-swept styles, or a sleek bob", ["Long layers", "Soft waves", "Side part"], []),
-        "Round": ("Long layers or a side part to add visual length", ["Long layers", "Side part", "Volume at the crown"], ["Heavy blunt bangs"]),
-        "Square": ("Soft waves or layered styles to soften angular lines", ["Soft waves", "Side-swept fringe", "Layered bob"], ["Very blunt jaw-length cuts"]),
-        "Heart": ("Chin-length layers or side-swept fringe", ["Side-swept fringe", "Chin-length layers", "Soft waves"], ["Excess volume at the crown"]),
-        "Diamond": ("Soft fringe or chin-length layers for balance", ["Soft fringe", "Chin-length layers", "Tucked-behind-ear styles"], ["Excess width at the cheekbones"]),
-    }
-    hairstyle, hairstyle_best, hairstyle_avoid = hairstyles[face_shape]
-    hairstyle = f"{hair_length} {hair_texture.lower()} hair: {hairstyle}."
-
-    earrings = {
-        "Oval": "Hoops, studs, or drop earrings",
-        "Round": "Long drop or angular earrings",
-        "Square": "Rounded hoops or soft drop earrings",
-        "Heart": "Teardrop or chandelier earrings",
-        "Diamond": "Studs or curved drop earrings",
-    }[face_shape]
-    necklace = {
-        "Oval": "Most necklace lengths work; choose a proportion that suits the neckline",
-        "Round": "A longer pendant can create a lengthening line",
-        "Square": "A rounded or curved necklace softens angular necklines",
-        "Heart": "A short, curved necklace balances a wider neckline",
-        "Diamond": "A delicate, curved necklace complements angular features",
-    }[face_shape]
+    predictions = get_recommendations(profile)
+    colors_to_wear = predictions["palette"].split("|")
+    what_to_wear, what_to_avoid = get_body_type_guide(profile["body_type"])
+    _, hairstyle_best, hairstyle_avoid = get_hairstyle_guide(face_shape)
 
     height_m = profile["height_inches"] * 0.0254
     bmi = profile["weight_kg"] / (height_m * height_m)
@@ -237,22 +182,24 @@ def _build_recommendations(profile):
     else:
         bmi_category = "Obese"
 
+    model_basis = "ML prototype"
     return {
-        "recommendation_method": "rule-based",
+        "recommendation_method": "synthetic_ml_prototype",
+        "model_info": model_status(),
         "recommendations": {
-            "outfit": {"recommendation": outfit, "basis": "Rule-based"},
-            "color_palette": {"basis": "Rule-based"},
-            "hairstyle": {"recommendation": hairstyle, "basis": "Rule-based"},
-            "earrings": {"recommendation": earrings, "basis": "Rule-based"},
-            "necklace": {"recommendation": necklace, "basis": "Rule-based"},
+            "outfit": {"recommendation": predictions["outfit"], "basis": model_basis},
+            "color_palette": {"basis": model_basis},
+            "hairstyle": {"recommendation": predictions["hairstyle"], "basis": model_basis},
+            "earrings": {"recommendation": predictions["earrings"], "basis": model_basis},
+            "necklace": {"recommendation": predictions["necklace"], "basis": model_basis},
         },
         "styling_guide": {
             "outfit_tip": f"Choose fabrics and fit that feel comfortable for your {occasion.lower()} plans.",
             "what_to_wear": what_to_wear,
             "what_to_avoid": what_to_avoid,
             "colors_to_wear": colors_to_wear,
-            "colors_to_avoid": colors_to_avoid,
-            "color_tip": "Color suggestions are general styling ideas; lighting and personal preference can change how colors appear.",
+            "colors_to_avoid": get_color_avoidance(profile["skin_tone"]),
+            "color_tip": "Prototype palette output is based on skin-tone and style labels in generated examples; check colors in person.",
             "hairstyle_best": hairstyle_best,
             "hairstyle_avoid": hairstyle_avoid,
             "hairstyle_tip": f"Suggestions are adapted for {hair_length.lower()} {hair_texture.lower()} hair.",
@@ -262,7 +209,7 @@ def _build_recommendations(profile):
                 "bangles": "Try a simple stack or a single statement bangle.",
                 "ring": "Choose a minimal band or one statement ring.",
             },
-            "accessories": ["A coordinating bag", "Comfortable shoes", "One complementary accessory"],
+            "accessories": predictions["accessories"].split("|"),
         },
         "user_stats": {
             "bmi": round(bmi, 1),

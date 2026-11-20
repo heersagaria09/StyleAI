@@ -28,7 +28,9 @@ def client(tmp_path, monkeypatch):
 def test_health(client):
     response = client.get("/api/health")
     assert response.status_code == 200
-    assert response.get_json()["status"] == "ok"
+    body = response.get_json()
+    assert body["status"] == "ok"
+    assert body["recommendation_model"]["available"] is True
 
 
 def test_home_serves_frontend(client):
@@ -135,11 +137,13 @@ def test_recommendation_workflow_returns_renderable_data(client):
 
     assert response.status_code == 200
     body = response.get_json()
-    assert body["recommendation_method"] == "rule-based"
+    assert body["recommendation_method"] == "synthetic_ml_prototype"
+    assert body["model_info"]["algorithm"] == "scikit-learn decision trees"
+    assert body["model_info"]["training_rows"] == 18000
     recommendations = body["recommendations"]
     assert recommendations["outfit"]["recommendation"]
-    assert recommendations["outfit"]["basis"] == "Rule-based"
-    assert recommendations["color_palette"]["basis"] == "Rule-based"
+    assert recommendations["outfit"]["basis"] == "ML prototype"
+    assert recommendations["color_palette"]["basis"] == "ML prototype"
     assert recommendations["hairstyle"]["recommendation"]
     assert recommendations["earrings"]["recommendation"]
     assert recommendations["necklace"]["recommendation"]
@@ -162,6 +166,17 @@ def test_recommendation_changes_when_occasion_changes(client):
     party = client.post("/api/recommend", json=profile).get_json()
 
     assert office["recommendations"]["outfit"]["recommendation"] != party["recommendations"]["outfit"]["recommendation"]
+
+
+def test_recommendation_palette_and_accessories_use_profile(client):
+    profile = valid_profile()
+    medium = client.post("/api/recommend", json=profile).get_json()
+    profile["skin_tone"] = "Deep"
+    profile["face_shape"] = "Round"
+    deep_round = client.post("/api/recommend", json=profile).get_json()
+
+    assert medium["styling_guide"]["colors_to_wear"] != deep_round["styling_guide"]["colors_to_wear"]
+    assert medium["recommendations"]["earrings"]["recommendation"] != deep_round["recommendations"]["earrings"]["recommendation"]
 
 
 @pytest.mark.parametrize(

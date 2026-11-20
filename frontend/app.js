@@ -184,7 +184,7 @@ function renderResults(data) {
   `;
 
   // ── Style score ──────────────────────────────────────────────────────────
-  const method = data.recommendation_method === "rule-based" ? "Rules" : "Unknown";
+  const method = data.recommendation_method === "synthetic_ml_prototype" ? "ML demo" : "Unknown";
   document.getElementById("styleScoreCard").innerHTML = `
     <span class="score-label">Recommendation method</span>
     <span class="score-number">${method}</span>
@@ -337,7 +337,7 @@ function buildPrintReport(data) {
       </div>
       <div class="print-item">
         <h4>Recommendation method</h4>
-        <p>Rule-based styling suggestions</p>
+        <p>ML prototype trained on generated examples</p>
       </div>
     </div>
 

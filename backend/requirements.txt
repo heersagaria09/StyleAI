@@ -4,3 +4,4 @@ Pillow>=11,<12
 numpy>=2,<3
 opencv-python-headless>=4.11,<5
 pytest>=8,<9
+scikit-learn>=1.5,<2
