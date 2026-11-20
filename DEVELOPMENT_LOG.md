@@ -101,7 +101,7 @@
 - **Implementation summary:** Added a local `.env` configuration path for Atlas, a database health check, and consent-based persistence to `recommendation_history`. Saving is unchecked by default; generated recommendations still display if MongoDB is unconfigured or unavailable. The uploaded photo is not included in MongoDB documents.
 - **Tests:** `python -m pytest -q backend/test_app.py`; `python -m compileall -q backend`; `python -m pip check`; `node --check frontend/app.js`; workspace Pylance diagnostics; `python test_db.py` with no URI.
 - **Test results:** 31 tests passed; compilation, dependencies, frontend syntax, and Pylance checks passed. Live health, model recommendation, palette/accessory, and opt-in error workflows passed on port 8001. The database check reports missing `MONGO_URI` clearly. Live Atlas connectivity remains unverified because no Atlas URI is configured.
-- **Git commit:** Pending
-- **Commit hash:** Pending
-- **GitHub push status:** Pending
+- **Git commit:** `feat: add opt-in MongoDB recommendation storage`
+- **Commit hash:** `e9c15530d429af6b72b265e8328113d045a29702`
+- **GitHub push status:** Successfully pushed and verified on `origin/main`
 - **Remaining tasks:** Configure and verify the user's Atlas URI/network access; replace generated ML examples with reviewed or real labeled data before claiming prediction accuracy; implement MediaPipe face-shape analysis.
