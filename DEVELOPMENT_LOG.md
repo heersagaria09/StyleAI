@@ -75,7 +75,7 @@
 - **Implementation summary:** Added the missing `/api/recommend` endpoint with input validation and explicit rule-based output, served frontend files from Flask at `/`, integrated upload with image preprocessing/face detection/skin-tone analysis, improved upload and network error messages, fixed the undefined frontend error variable, and made the frontend use the same-origin API. Disabled debug mode by default and documented the actual backend scope and run command.
 - **Tests:** `python -m pytest -q backend/test_app.py`; `python -m compileall -q backend`; `python -m pip check`; `node --check frontend/app.js`; live HTTP checks for `/`, `/api/health`, `/api/recommend`, and `/api/upload`.
 - **Test results:** 27 tests passed; Python compilation and dependency checks passed; JavaScript syntax check passed. Port 8000 was occupied by another process, so live app checks were moved to configurable port 8001.
-- **Git commit:** Pending
-- **Commit hash:** Pending
-- **GitHub push status:** Pending
+- **Git commit:** `fix: restore Flask recommendation workflows`
+- **Commit hash:** `ac48ea735089e9086efffcca86e778c5ab9441cd`
+- **GitHub push status:** Successfully pushed and verified on `origin/main`
 - **Remaining tasks:** Face-shape landmark detection, advanced recommendations, virtual try-on, deep-learning recommendations, trend prediction, and full browser-based UX validation.
