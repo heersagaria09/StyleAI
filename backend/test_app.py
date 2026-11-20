@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 
 from app import app
-from image_analysis import preprocess_image
+from image_analysis import detect_faces, preprocess_image
 
 
 def make_image(extension="PNG", size=(200, 200), color=(180, 140, 120)):
@@ -99,3 +99,11 @@ def test_preprocesses_image(tmp_path):
 
     assert processed.shape[:2] == (1024, 683)
     assert processed.dtype == np.uint8
+
+
+def test_detect_faces_handles_blank_image():
+    image = np.full((300, 300, 3), 180, dtype=np.uint8)
+
+    faces = detect_faces(image)
+
+    assert faces == []
