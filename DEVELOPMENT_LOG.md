@@ -153,5 +153,21 @@
 - **Feature:** User-rated recommendation match
 - **Development step:** Let users rate how well the generated style result matches them
 - **Files:** `README.md`, `DEVELOPMENT_LOG.md`, `frontend/app.js`, `frontend/style.css`
-- **Implementation summary:** Added an accessible 1–5 rating control to the recommendation card and display the selected rating scaled to a score out of 100. The score is explicitly self-reported, is not represented as model accuracy, and is not persisted or used for training.
+- **Implementation summary:** Added an accessible 1–5 rating control to the recommendation card and display the selected rating scaled to a score out of 100. The score is explicitly self-reported and is not represented as model accuracy.
 - **Tests:** `node --check frontend/app.js`; `git diff --check`.
+
+### 15. Collecting opted-in style feedback
+
+- **Feature:** User feedback for future model evaluation and training
+- **Development step:** Save ratings only with explicit MongoDB consent and attach them to the recommendation/profile record
+- **Files:** `README.md`, `DEVELOPMENT_LOG.md`, `backend/app.py`, `backend/storage.py`, `backend/test_app.py`, `frontend/app.js`, `frontend/index.html`
+- **Implementation summary:** Added a validated feedback endpoint that updates the previously saved recommendation with a 1–5 rating. The frontend submits only when MongoDB saving was opted into and the recommendation was successfully stored. Feedback is collected for future evaluation/training; this does not automatically retrain the model.
+- **Tests:** `.\backend\.venv\Scripts\python.exe -m pytest -q backend\test_app.py` (41 passed); `node --check frontend\app.js`; `git diff --check`; browser verified that ratings are not submitted without opt-in and that opted-in ratings are sent and acknowledged.
+
+### 16. Improving face-shape estimate reliability
+
+- **Feature:** More cautious photo-based face-shape estimation
+- **Development step:** Measure facial widths horizontally and reject strongly turned faces instead of forcing a category
+- **Files:** `README.md`, `backend/app.py`, `backend/image_analysis.py`, `backend/test_app.py`, `frontend/app.js`, `frontend/index.html`
+- **Implementation summary:** Landmark width ratios now use horizontal distances; a strong left/right cheek imbalance returns `Unknown`. The interface calls the result a rough suggestion and asks users to confirm it, especially with a straight-on photo. This remains a heuristic and is not claimed to be perfectly accurate.
+- **Tests:** `.\backend\.venv\Scripts\python.exe -m pytest -q backend\test_app.py` (44 passed); Pylance syntax checks for changed Python files; `node --check frontend\app.js`; `git diff --check`.

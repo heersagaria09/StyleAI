@@ -2,6 +2,7 @@ import os
 import uuid
 from pathlib import Path
 
+from bson import ObjectId
 import cv2
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
@@ -14,7 +15,7 @@ from image_analysis import (
     preprocess_image,
 )
 from recommendation_model import get_recommendations, model_status
-from storage import mongodb_status, save_recommendation
+from storage import mongodb_status, save_feedback, save_recommendation
 from style_catalog import (
     get_body_type_guide,
     get_color_avoidance,
@@ -119,9 +120,16 @@ def upload_photo():
         analysis_note = "No face detected. Select categories manually."
         if landmark_analysis["face_count"] == 1:
             detected["face_shape"] = landmark_analysis["face_shape"]
-            analysis_note = (
-                "Face shape is a landmark-based estimate; verify or change it manually."
-            )
+            if detected["face_shape"] == "Unknown":
+                analysis_note = (
+                    "Face shape could not be estimated reliably. Use a straight-on photo "
+                    "or select the Face Shape manually."
+                )
+            else:
+                analysis_note = (
+                    "Possible face shape from a rough landmark estimate. Use a straight-on photo "
+                    "and confirm or change the Face Shape selection manually."
+                )
         elif landmark_analysis["face_count"] > 1:
             analysis_note = "Multiple faces detected. Select categories manually."
 
@@ -270,6 +278,30 @@ def recommend():
         result["mongodb"] = save_recommendation(profile, result)
     else:
         result["mongodb"] = {"requested": False, "saved": False}
+    return jsonify(result)
+
+
+@app.post("/api/feedback")
+def recommendation_feedback():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"error": "A JSON feedback object is required."}), 400
+    if payload.get("consent") is not True:
+        return jsonify({"error": "Explicit consent is required to save feedback."}), 400
+
+    record_id = payload.get("record_id")
+    if not isinstance(record_id, str) or not ObjectId.is_valid(record_id):
+        return jsonify({"error": "A valid saved recommendation ID is required."}), 400
+
+    rating = payload.get("rating")
+    if isinstance(rating, bool) or not isinstance(rating, int) or not 1 <= rating <= 5:
+        return jsonify({"error": "rating must be an integer from 1 to 5."}), 400
+
+    result = save_feedback(record_id, rating)
+    if result.get("not_found"):
+        return jsonify({"error": result["error"]}), 404
+    if not result["saved"]:
+        return jsonify({"error": result["error"]}), 503
     return jsonify(result)
 
 

@@ -162,6 +162,7 @@
             <option>Heart</option>
             <option>Diamond</option>
           </select>
+          <span class="hint">Photo-based face shapes are rough estimates. Confirm this selection or choose another.</span>
         </div>
 
         <div class="form-group">
@@ -232,9 +233,9 @@
 
       <label class="save-profile-option">
         <input type="checkbox" id="saveToMongo" />
-        Save my profile and recommendations to MongoDB
+        Save my profile, recommendations, and rating feedback to MongoDB
       </label>
-      <p class="hint">Optional. Your photo is never saved to MongoDB. Configure MONGO_URI locally to enable saving.</p>
+      <p class="hint">Optional. Ratings are saved only when this is selected. Your photo is never saved. Configure MONGO_URI locally to enable saving.</p>
       <p id="saveStatus" class="upload-status" role="status" aria-live="polite"></p>
 
       <button class="btn-primary" id="getStyleBtn" onclick="getRecommendations()">

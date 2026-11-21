@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
 
+from bson import ObjectId
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError
@@ -74,3 +75,34 @@ def save_recommendation(profile, result):
         }
 
     return {"requested": True, "saved": True, "record_id": str(record.inserted_id)}
+
+
+def save_feedback(record_id, rating):
+    try:
+        collection = _collection()
+        if collection is None:
+            return {
+                "saved": False,
+                "error": "MongoDB is not configured. Set MONGO_URI in the local .env file.",
+            }
+        result = collection.update_one(
+            {"_id": ObjectId(record_id)},
+            {
+                "$set": {
+                    "feedback": {
+                        "rating": rating,
+                        "scale": 5,
+                        "created_at": datetime.now(timezone.utc),
+                    }
+                }
+            },
+        )
+    except PyMongoError:
+        return {
+            "saved": False,
+            "error": "MongoDB could not save this feedback. Check the URI, network access, and database permissions.",
+        }
+
+    if result.matched_count == 0:
+        return {"saved": False, "not_found": True, "error": "The saved recommendation was not found."}
+    return {"saved": True}

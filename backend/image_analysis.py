@@ -11,20 +11,25 @@ FACE_OVAL_LANDMARKS = (
 )
 
 
-def _distance(landmarks, first, second):
-    return float(np.hypot(
-        landmarks[first].x - landmarks[second].x,
-        landmarks[first].y - landmarks[second].y,
-    ))
+def _horizontal_distance(landmarks, first, second):
+    return abs(float(landmarks[first].x - landmarks[second].x))
 
 
 def estimate_face_shape(landmarks):
     face_length = abs(landmarks[10].y - landmarks[152].y)
-    cheek_width = _distance(landmarks, 234, 454)
-    forehead_width = _distance(landmarks, 103, 332)
-    jaw_width = _distance(landmarks, 172, 397)
+    cheek_width = _horizontal_distance(landmarks, 234, 454)
+    forehead_width = _horizontal_distance(landmarks, 103, 332)
+    jaw_width = _horizontal_distance(landmarks, 172, 397)
     if min(face_length, cheek_width, forehead_width, jaw_width) <= 0:
         return "Unknown", {}
+
+    left_cheek = _horizontal_distance(landmarks, 1, 234)
+    right_cheek = _horizontal_distance(landmarks, 1, 454)
+    if min(left_cheek, right_cheek) <= 0:
+        return "Unknown", {}
+    cheek_balance = min(left_cheek, right_cheek) / max(left_cheek, right_cheek)
+    if cheek_balance < 0.55:
+        return "Unknown", {"cheek_balance": round(cheek_balance, 3)}
 
     length_to_width = face_length / cheek_width
     forehead_to_jaw = forehead_width / jaw_width
@@ -50,6 +55,7 @@ def estimate_face_shape(landmarks):
         "face_length_to_cheek_width": round(length_to_width, 3),
         "forehead_to_jaw_width": round(forehead_to_jaw, 3),
         "jaw_to_cheek_width": round(jaw_to_cheek, 3),
+        "cheek_balance": round(cheek_balance, 3),
     }
 
 

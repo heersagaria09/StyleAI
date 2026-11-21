@@ -23,6 +23,7 @@ const COLOR_HEX = {
 
 const OCCASIONS = ["Casual", "College", "Office", "Wedding", "Party"];
 let lastPayload = null;   // remembers the last submitted profile for occasion-switch
+let lastFeedbackRecordId = null;
 let personImage = null;
 let personImageUrl = null;
 let photoWasUploaded = false;
@@ -188,6 +189,9 @@ function renderResults(data) {
   const recommendations = data.recommendations;
   const guide = data.styling_guide;
   const stats = data.user_stats;
+  lastFeedbackRecordId = data.mongodb && data.mongodb.saved
+    ? data.mongodb.record_id
+    : null;
   const saveStatus = document.getElementById("saveStatus");
   if (data.mongodb && data.mongodb.saved) {
     saveStatus.textContent = "✅ Profile and recommendations saved to MongoDB.";
@@ -241,7 +245,7 @@ function renderResults(data) {
     button.textContent = String(rating);
     button.setAttribute("aria-label", `${rating} out of 5: ${label}`);
     button.setAttribute("aria-pressed", "false");
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
       ratingButtons.querySelectorAll(".match-rating-button").forEach((item) => {
         item.classList.remove("selected");
         item.setAttribute("aria-pressed", "false");
@@ -251,8 +255,19 @@ function renderResults(data) {
       styleScoreCard.querySelector("#matchScoreValue").textContent = String(rating * 20);
       styleScoreCard.querySelector("#matchScoreCaption").textContent =
         `Based on your ${rating}/5 rating`;
-      styleScoreCard.querySelector("#matchFeedbackStatus").textContent =
-        `Your rating: ${rating}/5 — ${label}.`;
+      const feedbackStatus = styleScoreCard.querySelector("#matchFeedbackStatus");
+      feedbackStatus.textContent = `Your rating: ${rating}/5 — ${label}.`;
+
+      if (!lastPayload || !lastPayload.save_to_mongodb) {
+        feedbackStatus.textContent += " Opt in and generate recommendations again to contribute feedback.";
+        return;
+      }
+      if (!lastFeedbackRecordId) {
+        feedbackStatus.textContent += " This recommendation was not saved, so the rating cannot be collected.";
+        return;
+      }
+
+      await saveMatchFeedback(lastFeedbackRecordId, rating, feedbackStatus, ratingButtons);
     });
     ratingButtons.appendChild(button);
   });
@@ -381,6 +396,32 @@ function renderSwatches(containerId, colors, isAvoid) {
     `;
     container.appendChild(div);
   });
+}
+
+async function saveMatchFeedback(recordId, rating, statusElement, ratingButtons) {
+  const buttons = Array.from(ratingButtons.querySelectorAll(".match-rating-button"));
+  buttons.forEach((button) => { button.disabled = true; });
+  statusElement.textContent = "Saving your feedback…";
+
+  try {
+    const response = await fetch(`${API}/feedback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ record_id: recordId, rating, consent: true }),
+    });
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error("The server returned an invalid response.");
+    }
+    if (!response.ok) throw new Error(data.error || "Feedback could not be saved.");
+    statusElement.textContent = "Thanks—your feedback was saved for future model evaluation and training.";
+  } catch (error) {
+    statusElement.textContent = `Your rating could not be saved: ${error.message}`;
+  } finally {
+    buttons.forEach((button) => { button.disabled = false; });
+  }
 }
 
 // ── Download style report (print to PDF) ────────────────────────────────────
@@ -588,7 +629,7 @@ async function processPhotoFile(file) {
       const detectedItems = [];
       if (d.face_shape && d.face_shape !== "Unknown") {
         document.getElementById("face_shape").value = d.face_shape;
-        detectedItems.push(`estimated face shape: ${d.face_shape}`);
+        detectedItems.push(`possible face shape: ${d.face_shape} (please confirm or change it)`);
       }
       if (d.skin_tone && d.skin_tone !== "Unknown") {
         document.getElementById("skin_tone").value = d.skin_tone;
@@ -657,7 +698,7 @@ function drawAnalysisPreview(landmarks) {
 
   if (landmarks.length > 2) {
     note.textContent =
-      "Face outline landmarks are shown for an approximate estimate. Verify or change the face-shape selection above.";
+      "Face outline and shape are rough estimates. A straight-on photo works best; confirm or change the Face Shape selection.";
     context.beginPath();
     landmarks.forEach((point, index) => {
       const x = point.x * size.width;
@@ -786,5 +827,6 @@ function resetForm() {
   personImage = null;
   personImageUrl = null;
   lastPayload = null;
+  lastFeedbackRecordId = null;
   window.scrollTo({ top: 0, behavior: "smooth" });
 }

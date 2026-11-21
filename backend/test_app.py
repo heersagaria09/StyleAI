@@ -6,6 +6,7 @@ from PIL import Image
 import pytest
 import cv2
 import numpy as np
+from bson import ObjectId
 from pymongo.errors import PyMongoError
 
 import app as app_module
@@ -104,7 +105,8 @@ def test_upload_returns_face_landmarks_for_frontend_preview(client, monkeypatch)
     assert body["detected"]["face_shape"] == "Oval"
     assert body["detected"]["skin_tone"] == "Medium"
     assert len(body["face_landmarks"]) == 3
-    assert "verify or change it manually" in body["analysis_note"]
+    assert "rough landmark estimate" in body["analysis_note"]
+    assert "confirm or change" in body["analysis_note"]
     photo_recommendations = body["photo_recommendations"]
     assert photo_recommendations["available"] is True
     assert photo_recommendations["color_palettes"]["Western"] == [
@@ -275,6 +277,87 @@ def test_reports_mongodb_save_errors_without_losing_recommendations(client, monk
     assert "Check the URI" in body["mongodb"]["error"]
 
 
+def test_saves_opted_in_feedback_to_recommendation(client, monkeypatch):
+    record_id = ObjectId()
+
+    class FakeCollection:
+        def update_one(self, query, update):
+            self.query = query
+            self.update = update
+            return SimpleNamespace(matched_count=1)
+
+    collection = FakeCollection()
+    monkeypatch.setattr(storage_module, "_collection", lambda: collection)
+
+    response = client.post("/api/feedback", json={
+        "record_id": str(record_id),
+        "rating": 4,
+        "consent": True,
+    })
+
+    assert response.status_code == 200
+    assert response.get_json() == {"saved": True}
+    assert collection.query == {"_id": record_id}
+    assert collection.update["$set"]["feedback"]["rating"] == 4
+    assert collection.update["$set"]["feedback"]["scale"] == 5
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"record_id": str(ObjectId()), "rating": 4, "consent": False},
+        {"record_id": "not-an-object-id", "rating": 4, "consent": True},
+        {"record_id": str(ObjectId()), "rating": 6, "consent": True},
+        {"record_id": str(ObjectId()), "rating": True, "consent": True},
+    ],
+)
+def test_rejects_invalid_feedback(client, monkeypatch, payload):
+    monkeypatch.setattr(
+        storage_module,
+        "_collection",
+        lambda: pytest.fail("invalid feedback must not access the database"),
+    )
+
+    response = client.post("/api/feedback", json=payload)
+
+    assert response.status_code == 400
+    assert response.get_json()["error"]
+
+
+def test_reports_when_feedback_recommendation_is_missing(client, monkeypatch):
+    class EmptyCollection:
+        def update_one(self, query, update):
+            return SimpleNamespace(matched_count=0)
+
+    monkeypatch.setattr(storage_module, "_collection", lambda: EmptyCollection())
+
+    response = client.post("/api/feedback", json={
+        "record_id": str(ObjectId()),
+        "rating": 3,
+        "consent": True,
+    })
+
+    assert response.status_code == 404
+    assert "not found" in response.get_json()["error"]
+
+
+def test_reports_feedback_storage_errors(client, monkeypatch):
+    class FailedCollection:
+        def update_one(self, query, update):
+            raise PyMongoError("test connection failure")
+
+    monkeypatch.setattr(storage_module, "_collection", lambda: FailedCollection())
+
+    response = client.post("/api/feedback", json={
+        "record_id": str(ObjectId()),
+        "rating": 3,
+        "consent": True,
+    })
+
+    assert response.status_code == 503
+    assert "could not save" in response.get_json()["error"]
+
+
 def test_recommendation_changes_when_occasion_changes(client):
     profile = valid_profile()
     office = client.post("/api/recommend", json=profile).get_json()
@@ -368,6 +451,7 @@ def test_face_shape_uses_landmark_proportions():
         set_point(332, 0.5 + forehead_width / 2, 0.3)
         set_point(172, 0.5 - jaw_width / 2, 0.7)
         set_point(397, 0.5 + jaw_width / 2, 0.7)
+        set_point(1, 0.5, 0.5)
         return points
 
     cases = [
@@ -381,6 +465,80 @@ def test_face_shape_uses_landmark_proportions():
         shape, measurements = estimate_face_shape(landmarks(*dimensions))
         assert shape == expected
         assert measurements["face_length_to_cheek_width"] > 0
+
+
+def test_face_shape_uses_horizontal_widths_not_diagonal_landmark_distances():
+    points = [SimpleNamespace(x=0.5, y=0.5) for _ in range(468)]
+
+    def set_point(index, x, y):
+        points[index] = SimpleNamespace(x=x, y=y)
+
+    set_point(10, 0.5, 0.1)
+    set_point(152, 0.5, 0.8)
+    set_point(234, 0.2, 0.3)
+    set_point(454, 0.8, 0.7)
+    set_point(103, 0.3, 0.2)
+    set_point(332, 0.7, 0.4)
+    set_point(172, 0.3, 0.6)
+    set_point(397, 0.7, 0.8)
+    set_point(1, 0.5, 0.5)
+
+    shape, measurements = estimate_face_shape(points)
+
+    assert shape == "Round"
+    assert measurements["face_length_to_cheek_width"] == pytest.approx(1.167)
+    assert measurements["cheek_balance"] == 1.0
+
+
+def test_face_shape_returns_unknown_for_a_strongly_turned_face():
+    points = [SimpleNamespace(x=0.5, y=0.5) for _ in range(468)]
+    for index, x, y in (
+        (10, 0.5, 0.1),
+        (152, 0.5, 0.8),
+        (234, 0.2, 0.5),
+        (454, 0.8, 0.5),
+        (103, 0.3, 0.3),
+        (332, 0.7, 0.3),
+        (172, 0.3, 0.7),
+        (397, 0.7, 0.7),
+        (1, 0.75, 0.5),
+    ):
+        points[index] = SimpleNamespace(x=x, y=y)
+
+    shape, measurements = estimate_face_shape(points)
+
+    assert shape == "Unknown"
+    assert measurements["cheek_balance"] < 0.55
+
+
+def test_upload_does_not_suggest_a_shape_when_landmark_pose_is_uncertain(client, monkeypatch):
+    monkeypatch.setattr(app_module, "detect_faces", Mock(return_value=[{
+        "x": 20,
+        "y": 20,
+        "width": 100,
+        "height": 100,
+    }]))
+    monkeypatch.setattr(app_module, "classify_skin_tone", Mock(return_value={
+        "skin_tone": "Medium",
+        "confidence": 80,
+    }))
+    monkeypatch.setattr(app_module, "analyze_face_landmarks", Mock(return_value={
+        "face_count": 1,
+        "face_shape": "Unknown",
+        "landmarks": [],
+        "measurements": {"cheek_balance": 0.4},
+    }))
+
+    response = client.post(
+        "/api/upload",
+        data={"photo": (make_image(), "portrait.png")},
+        content_type="multipart/form-data",
+    )
+
+    body = response.get_json()
+    assert response.status_code == 200
+    assert body["detected"]["face_shape"] == "Unknown"
+    assert "could not be estimated reliably" in body["analysis_note"]
 
 
 def test_landmark_detection_returns_no_face_for_blank_image():
